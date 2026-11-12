@@ -1,72 +1,29 @@
 /* EgressLens. Same tokens as the other 1ms.dog tools (me2cloud, ls, home), so a shared top bar can follow the page's
    theme. The accent is teal. Exits: --e-d / --e-d2 your own line (D), --e-p1…--e-p4 proxies (P1…P4). */
-:root {
-  --bg: #f6f6f7; --panel: #ffffff; --soft: #f3f3f5; --line: #e4e4e8;
-  --fg: #141416; --muted: #6e6e78; --ink: #0f766e; --ink-fg: #ffffff;
-  --ok: #059669; --bad: #dc2626;
-  --e-d: #059669; --e-d2: #0d9488; --e-p1: #d97706; --e-p2: #7c3aed; --e-p3: #db2777; --e-p4: #dc2626;
-  --f-ui: "Geist", "PingFang SC", "Microsoft YaHei", "Hiragino Sans", "Yu Gothic", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans", system-ui, sans-serif;
-  --f-num: "Geist Mono", ui-monospace, "SF Mono", Consolas, monospace;
-  --r: 14px;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #1c1c1c; --panel: #232323; --soft: #282828; --line: #363636;
-  --fg: #ededed; --muted: #a0a0a0; --ink: #2dd4bf; --ink-fg: #042f2a;
-  --ok: #34d399; --bad: #f87171;
-  --e-d: #34d399; --e-d2: #2dd4bf; --e-p1: #fbbf24; --e-p2: #a78bfa; --e-p3: #f472b6; --e-p4: #f87171;
-  color-scheme: dark; } }
-:root[data-theme="dark"] {
-  --bg: #1c1c1c; --panel: #232323; --soft: #282828; --line: #363636;
-  --fg: #ededed; --muted: #a0a0a0; --ink: #2dd4bf; --ink-fg: #042f2a;
-  --ok: #34d399; --bad: #f87171;
-  --e-d: #34d399; --e-d2: #2dd4bf; --e-p1: #fbbf24; --e-p2: #a78bfa; --e-p3: #f472b6; --e-p4: #f87171;
-  color-scheme: dark; }
 
-* { box-sizing: border-box; }
-[hidden] { display: none !important; }
-html, body { margin: 0; }
-html { background: var(--bg); scrollbar-gutter: stable; }   /* reserve the scrollbar's space, so the page doesn't shift when one appears */
+ }
+   /* reserve the scrollbar's space, so the page doesn't shift when one appears */
 body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--f-ui); -webkit-font-smoothing: antialiased; }
 .app { max-width: 1080px; margin: 0 auto; padding-block: 20px 40px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: flex; flex-direction: column; gap: 20px; }
 main { display: flex; flex-direction: column; gap: 20px; }
-button, select { font: inherit; color: inherit; }
-a { color: inherit; }
-h1, h2, h3, p { margin: 0; }
 ul { list-style: none; margin: 0; padding: 0; }
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.m { color: var(--muted); }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
-svg[viewBox="0 0 16 16"] { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .blink { animation: blink 1.2s ease-in-out infinite; }
 @keyframes blink { 50% { opacity: .45; } }
 
 /* top bar */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; min-width: 0; overflow: hidden; }
-.logo { display: block; width: 90px; height: 36px; flex: none; }
-.logo img { display: block; width: 90px; height: 36px; }
 .brand-name { font-size: 20px; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; }
-.logo-dark { display: none !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-light { display: none !important; } :root:not([data-theme="light"]) .logo-dark { display: block !important; } }
-:root[data-theme="dark"] .logo-light { display: none !important; }
-:root[data-theme="dark"] .logo-dark { display: block !important; }
 .top-acts { display: flex; gap: 8px; align-items: center; flex: none; }
 .sel { position: relative; display: flex; align-items: center; height: 34px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); padding-left: 10px; }
-.sel svg { width: 15px; height: 15px; color: var(--muted); flex: none; }
-/* the open list is drawn by the OS: without its own colors it stays light in the dark theme */
-select option, select optgroup { background-color: var(--panel); color: var(--fg); }
-select option:checked { background-color: var(--soft); }
 /* 16px: below that, iOS zooms the page in when the list opens */
 .sel select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; height: 100%; padding: 0 10px 0 6px; font-size: 16px; cursor: pointer; outline: none; }
 .icon-btn { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); cursor: pointer; padding: 0; }
-.icon-btn svg { width: 16px; height: 16px; }
 .gh svg { fill: currentColor; stroke: none; }
-#theme svg { display: none; }
-#theme[data-th="system"] .i-sys, #theme[data-th="light"] .i-light, #theme[data-th="dark"] .i-dark, #theme:not([data-th]) .i-sys { display: block; }
 
 /* hero: headline, then exits | findings, then the action bar */
 .hero { padding: 20px 22px 0; display: flex; flex-direction: column; gap: 16px; }
@@ -130,9 +87,7 @@ select option:checked { background-color: var(--soft); }
 .prog-t { font: 12.5px var(--f-num); color: var(--muted); font-variant-numeric: tabular-nums; }
 .acts { margin-left: auto; display: flex; gap: 8px; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-weight: 500; white-space: nowrap; }
-.btn svg { width: 15px; height: 15px; }
 .btn.pri { background: var(--ink); color: var(--ink-fg); border-color: transparent; font-weight: 600; }
-.btn:disabled { opacity: .5; cursor: default; }
 /* while a run is in progress the main button keeps its color and spins its icon */
 .btn.pri.busy { opacity: 1; } .btn.pri.busy svg { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -170,7 +125,6 @@ select option:checked { background-color: var(--soft); }
 .help details:first-of-type { border-top: 0; }
 .help summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 .help details p { margin-top: 6px; color: var(--muted); font-size: 13.5px; }
-
 
 .foot { display: flex; gap: 14px; justify-content: center; font-size: 12px; color: var(--muted); }
 .foot a { color: inherit; }
