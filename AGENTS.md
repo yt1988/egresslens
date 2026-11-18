@@ -108,3 +108,8 @@ test/                logic and page-contract tests (node --test)
 
 When the page runs under the 1ms.dog shell, the shell injects the navigation, statistics and `<meta>` tags that turn
 on links to sibling tools and the embed mode. Self-hosted, none of that appears and the page works the same.
+
+## 提交说明
+
+- 用英文，一句话说清改了什么。
+- 引用站内 issue 时只写 `#<数字>`，不要写 `yt1988/<私有仓库>#<数字>`，也不要写出私有仓库的名字；公开仓库的历史里不该出现内部仓库。
