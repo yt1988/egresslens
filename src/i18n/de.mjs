@@ -46,6 +46,7 @@ export default {
   v_port_noudp: "TCP über {a}; UDP kommt nicht durch (blockiert, oder WebRTC ist im Browser aus)",
   v_port_udp: "Nur UDP kommt durch, über {b}; kein TCP-Port verbindet",
   ex_tun: "Evtl. Tunnel (MSS {n})",
+  ex_seen: "Gesehen von",
   hide: "IPs verbergen",
   show: "IPs zeigen",
   sniff: "Frage die Prüfpunkte …",

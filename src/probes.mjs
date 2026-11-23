@@ -30,12 +30,12 @@ export const PROBES = [
   { id: "dnspod4", g: "cn", name: "DNSPod", host: "ipv4.ddnspod.com", url: "https://ipv4.ddnspod.com", read: "text", fam: 4 },
   { id: "dnspod6", g: "cn", name: "DNSPod", host: "ipv6.ddnspod.com", url: "https://ipv6.ddnspod.com", read: "text", fam: 6 },
   // the route anchor in mainland China
-  { id: "acn", g: "cn", name: "1ms.dog", host: "probe.dog.1msapp.com", url: "https://probe.dog.1msapp.com:9443/conn", read: "conn", anchor: "cn" },
+  { id: "acn", g: "cn", name: "probe.dog.1msapp.com", host: "probe.dog.1msapp.com", url: "https://probe.dog.1msapp.com:9443/conn", read: "conn", anchor: "cn" },
 
   // IP lookup services abroad, this site first
   { id: "self", g: "intl", name: "", host: "", url: "/_ms/me", read: "me", self: 1 },
   // the route anchor abroad: the same probe binary as the one in China
-  { id: "aintl", g: "intl", name: "1ms.dog", host: "probe.1ms.dog", url: "https://probe.1ms.dog/conn", read: "conn", anchor: "intl" },
+  { id: "aintl", g: "intl", name: "probe.1ms.dog", host: "probe.1ms.dog", url: "https://probe.1ms.dog/conn", read: "conn", anchor: "intl" },
   { id: "ipsb", g: "intl", name: "IP.SB", host: "api.ip.sb", url: "https://api.ip.sb/geoip", read: "ipsb" },
   { id: "ipinfo", g: "intl", name: "ipinfo.io", host: "ipinfo.io", url: "https://ipinfo.io/json", read: "ipinfo" },
   { id: "ipapico", g: "intl", name: "ipapi.co", host: "ipapi.co", url: "https://ipapi.co/json/", read: "ipapico" },

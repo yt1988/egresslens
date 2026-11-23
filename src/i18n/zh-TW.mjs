@@ -46,6 +46,7 @@ export default {
   v_port_noudp: "TCP 走 {a}；UDP 不通（被擋，或瀏覽器關閉了 WebRTC）",
   v_port_udp: "只有 UDP 通，走 {b}；TCP 各連接埠都連不上",
   ex_tun: "可能經過隧道（MSS {n}）",
+  ex_seen: "看到它的網站",
   hide: "隱藏 IP",
   show: "顯示 IP",
   sniff: "正在詢問各個檢測點…",

@@ -50,7 +50,7 @@
   const EXTRA_TZ = { "Asia/Tehran": "IR" };
   const tzCc = () => { try { const z = Intl.DateTimeFormat().resolvedOptions().timeZone; return tzCountry(z) || EXTRA_TZ[z] || ""; } catch (e) { return ""; } };
   const GROUP_OF = Object.fromEntries(PROBES.map(p => [p.id, p.read === "stun" ? "udp" : p.g]));
-  const NAME_OF = id => { const p = PROBES.find(x => x.id === id); return p.self ? t("self_name") : p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name; };
+  const NAME_OF = id => { const p = PROBES.find(x => x.id === id); return !p ? "" : p.self ? t("self_name") : p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name; };
   const isStun = p => p.read === "stun";
 
   // A probe that gives no address says why, as { why, n }: "timeout", "http" (n = status), "net" (no connection:
@@ -173,13 +173,21 @@
   const EXT = '<svg class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
   const asRef = n => ASN ? `<a class="asl" href="${esc(toolHref(ASN, "AS" + n))}" title="${esc(t("asn_title"))}" target="_blank" rel="noopener">AS${n}</a>` : "AS" + n;
   const ipQ = ip => IPQS && !masked() ? `<a class="ipq" href="${esc(IPQS)}/?ip=${encodeURIComponent(ip)}" title="${esc(t("ipq_title"))}" target="_blank" rel="noopener">${esc(ip)}</a>` : esc(ipTxt(ip));
+  // which checkpoints saw an exit, under the names the page shows them by: the answer to "where does this exit come
+  // from". In the page's own order, each name once (two anchors share one name, a stack host shows its family).
+  const seenNames = e => {
+    const ids = new Set(e.probes || []);
+    return PROBES.filter(p => ids.has(p.id)).map(p => NAME_OF(p.id)).filter((n, i, a) => n && a.indexOf(n) === i).join(t("join"));
+  };
   const exCard = e => {
     // a shared result has no addresses: only which IP versions the exit has
     const ips = [4, 6].map(f => [f, e.ips.filter(ip => fam(ip) === f)]).map(([f, l]) => l.length ? `<span><em>IPv${f}</em>${l.map(ipQ).join(" · ")}</span>`
       : S.shared && e["v" + f] ? `<span><em>IPv${f}</em>•••</span>` : "").join("");
+    const seen = seenNames(e);
     return `<li class="ex">${chip(e.letter, true)}<div class="ex-b">` +
       `<div class="where">${flag(e.cc)}<b>${esc(whereOf(e))}</b>${e.org || e.asn ? `<span class="m">${esc(e.org)}${e.asn ? (e.org ? " · " : "") + asRef(e.asn) : ""}</span>` : ""}</div>` +
-      `<div class="ips">${ips}</div>` + (tunOf(e) ? `<div class="m tun">${esc(t("ex_tun", { n: tunOf(e) }))}</div>` : "") + `</div></li>`;
+      `<div class="ips">${ips}</div>` + (seen ? `<div class="m seen">${esc(t("ex_seen"))}${esc(t("colon"))}${esc(seen)}</div>` : "") +
+      (tunOf(e) ? `<div class="m tun">${esc(t("ex_tun", { n: tunOf(e) }))}</div>` : "") + `</div></li>`;
   };
   // the MSS 1ms.dog's TCP 443 read, when this exit carried that connection and the MSS suggests a tunnel
   const tunOf = e => { const r = (S.res.t443 || [])[0]; return r && e.ips.includes(r.ip) && tunneled(r.ip, r.mss) ? r.mss : 0; };

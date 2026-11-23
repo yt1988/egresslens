@@ -46,6 +46,7 @@ export default {
   v_port_noudp: "TCP は {a} 経由。UDP は通りません（遮断されているか、ブラウザで WebRTC がオフ）",
   v_port_udp: "UDP だけが {b} 経由で通り、TCP はどのポートも接続できません",
   ex_tun: "トンネル経由の可能性（MSS {n}）",
+  ex_seen: "検出したサイト",
   hide: "IP を隠す",
   show: "IP を表示",
   sniff: "各チェック先に問い合わせ中…",
