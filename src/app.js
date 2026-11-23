@@ -45,18 +45,10 @@
   $("#lang").onchange = e => { const l = e.target.value; store.set(K.lang, l); location.href = (S.shared ? D.paths : D.home)[l] + location.hash; };
 
   /* ---------- probes ---------- */
-  const TZ_CC = Object.fromEntries(("Asia/Shanghai:CN Asia/Chongqing:CN Asia/Harbin:CN Asia/Urumqi:CN Asia/Hong_Kong:HK Asia/Macau:MO Asia/Taipei:TW Asia/Tokyo:JP " +
-    "Asia/Seoul:KR Asia/Singapore:SG Asia/Kuala_Lumpur:MY Asia/Bangkok:TH Asia/Jakarta:ID Asia/Manila:PH Asia/Ho_Chi_Minh:VN Asia/Saigon:VN " +
-    "Asia/Kolkata:IN Asia/Calcutta:IN Asia/Dubai:AE Asia/Riyadh:SA Asia/Qatar:QA Asia/Jerusalem:IL Asia/Tel_Aviv:IL Asia/Karachi:PK Asia/Tehran:IR " +
-    "Europe/London:GB Europe/Dublin:IE Europe/Paris:FR Europe/Berlin:DE Europe/Amsterdam:NL Europe/Brussels:BE Europe/Zurich:CH Europe/Rome:IT " +
-    "Europe/Madrid:ES Europe/Lisbon:PT Europe/Stockholm:SE Europe/Oslo:NO Europe/Helsinki:FI Europe/Copenhagen:DK Europe/Warsaw:PL Europe/Vienna:AT " +
-    "Europe/Prague:CZ Europe/Moscow:RU Europe/Istanbul:TR Europe/Kiev:UA Europe/Kyiv:UA Europe/Athens:GR Europe/Bucharest:RO Europe/Budapest:HU " +
-    "Australia/Sydney:AU Australia/Melbourne:AU Australia/Brisbane:AU Australia/Perth:AU Australia/Adelaide:AU Pacific/Auckland:NZ " +
-    "America/New_York:US America/Chicago:US America/Denver:US America/Los_Angeles:US America/Phoenix:US America/Anchorage:US Pacific/Honolulu:US " +
-    "America/Toronto:CA America/Vancouver:CA America/Montreal:CA America/Edmonton:CA America/Mexico_City:MX America/Sao_Paulo:BR America/Santiago:CL " +
-    "America/Bogota:CO America/Lima:PE America/Argentina/Buenos_Aires:AR Africa/Johannesburg:ZA Africa/Cairo:EG Africa/Lagos:NG Africa/Nairobi:KE")
-    .split(" ").map(p => p.split(":")));
-  const tzCc = () => { try { return TZ_CC[Intl.DateTimeFormat().resolvedOptions().timeZone] || ""; } catch (e) { return ""; } };
+  // The browser's time zone → country from the shared core (src/egress.js), the site's one table. Asia/Tehran is the
+  // one zone this page covers that the core's table does not list yet (reported 2026-11-23); drop it once it does.
+  const EXTRA_TZ = { "Asia/Tehran": "IR" };
+  const tzCc = () => { try { const z = Intl.DateTimeFormat().resolvedOptions().timeZone; return tzCountry(z) || EXTRA_TZ[z] || ""; } catch (e) { return ""; } };
   const GROUP_OF = Object.fromEntries(PROBES.map(p => [p.id, p.read === "stun" ? "udp" : p.g]));
   const NAME_OF = id => { const p = PROBES.find(x => x.id === id); return p.self ? t("self_name") : p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name; };
   const isStun = p => p.read === "stun";
@@ -341,7 +333,7 @@
   }
 
   /* ---------- a run ---------- */
-  const seenAll = () => PROBES.flatMap(p => (S.res[p.id] || []).map(r => ({ ip: r.ip, probe: p.id })));
+  const seenAll = () => PROBES.flatMap(p => (S.res[p.id] || []).map(r => ({ ip: r.ip, probe: p.id, ...(p.fam ? { stack: true } : {}) })));
   // live view: only addresses whose network is known, so an address never shows as an exit of its own and then merges
   let raf = 0;
   const live = () => { if (raf) return; raf = requestAnimationFrame(() => {

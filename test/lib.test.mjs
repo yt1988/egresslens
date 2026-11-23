@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled } from "../src/lib.mjs";
+import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry } from "../src/lib.mjs";
 import { PROBES, GROUPS } from "../src/probes.mjs";
 
 const P = id => PROBES.find(p => p.id === id);
@@ -55,7 +55,7 @@ function scenario() {
   const seen = [], ok = {};
   for (const p of PROBES) {
     const ip = p.g === "cn" ? (p.fam === 6 ? LOCAL6 : LOCAL4) : p.read === "stun" ? LOCAL4 : p.g === "stack" ? (p.fam === 6 ? LOCAL6 : PROXY4) : PROXY6;
-    seen.push({ ip, probe: p.id }); ok[p.id] = true;
+    seen.push({ ip, probe: p.id, ...(p.fam ? { stack: true } : {}) }); ok[p.id] = true;
   }
   return { seen, ok };
 }
@@ -168,6 +168,23 @@ test("checks: one exit, a service on its own route, no WebRTC answer", () => {
   assert.deepEqual(F.except, { s: "info", k: "some", v: { groups: [{ x: "P", list: ["chatgpt", "claude"] }] } });
   // no exits at all: every row is empty
   assert.ok(Object.values(findings(PROBES, [], {}, "US")).every(r => r.s === "none"));
+});
+
+test("exceptions: a single-stack probe needs a reference exit of its own family", () => {
+  // every dual-stack probe abroad on a v4-only proxy; the IPv6-only hosts on a direct v6 exit. The two families are
+  // different exits, but the abroad exit has no IPv6 address to compare them with, so they are not an exception:
+  // the IPv6 row is where that is judged.
+  const geo = { "1.2.3.4": { cc: "JP", asn: 16509, org: "Amazon.com" }, "2001:db8::1": { cc: "CN", asn: 4808, org: "China Unicom" } };
+  const seen = PROBES.filter(p => p.read !== "stun").map(p => ({ ip: p.fam === 6 ? "2001:db8::1" : "1.2.3.4", probe: p.id, ...(p.fam ? { stack: true } : {}) }));
+  const F = findings(PROBES, groupExits(seen, geo, GROUP_OF, "off"), cfAll("JP"), "CN");
+  assert.deepEqual(F.except, { s: "ok", k: "none", v: {} });
+  assert.equal(F.v6.s, "bad");
+});
+
+test("time zones: the site's one table, with the zone it still lacks", () => {
+  assert.equal(tzCountry("Asia/Shanghai"), "CN");
+  assert.equal(tzCountry("Europe/Brussels"), "BE");
+  assert.equal(tzCountry("Asia/Tehran"), null);   // src/app.js keeps this one until the shared table has it
 });
 
 test("odd rows: probes on another exit than their kind, and a WebRTC leak", () => {

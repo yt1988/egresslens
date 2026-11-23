@@ -3,7 +3,7 @@
 //
 // Exit grouping and the direct/proxy/unknown reading come from the site-wide core in src/egress.js (vendored from
 // 1ms.dog; the rules are in its docs/egress-contract.md): this file only adapts its output to what the page shows.
-import { groupExits as coreExitGroups, kindOf as coreKind, pathOf as corePath, AI_BLOCKED as coreAIBlocked } from "./egress.js";
+import { groupExits as coreExitGroups, kindOf as coreKind, pathOf as corePath, AI_BLOCKED as coreAIBlocked, tzCountry as coreTzCountry } from "./egress.js";
 
 /* ---------- addresses ---------- */
 export const fam = x => x.includes(":") ? 6 : 4;
@@ -65,8 +65,10 @@ export const srflxAt = line => { const ip = srflxOf(line); return ip && { ip, po
 export const tunneled = (ip, mss) => !!mss && mss <= (fam(ip) === 6 ? 1380 : 1400);
 
 /* ---------- exits ---------- */
-// Regions where neither OpenAI (ChatGPT) nor Anthropic (Claude) offers its service, from the shared core.
+// Regions where neither OpenAI (ChatGPT) nor Anthropic (Claude) offers its service, and the time zone → country
+// table, both from the shared core (one table for the whole site).
 export const AI_BLOCKED = coreAIBlocked;
+export const tzCountry = coreTzCountry;
 // geo for an address: its own, or that of an address on the same network
 export function geoOf(geo, ip) {
   if (geo[ip]) return geo[ip];
@@ -82,9 +84,11 @@ export function geoOf(geo, ip) {
 // and country, the probes that saw it, and its path (which anchors it follows).
 // Order: direct first, then unknown, then proxies; within a kind by group and how many probes saw it.
 export function groupExits(seen, geo, groupOf, warp, anchors = {}) {
-  const answers = seen.map(({ ip, probe }) => {
+  const answers = seen.map(({ ip, probe, stack }) => {
     const g0 = geoOf(geo, ip);
-    return { id: probe, group: groupOf[probe], ip, org: (g0 && g0.org) || "", asn: (g0 && g0.asn) || null };
+    // `stack` marks a probe whose host has only one IP family: the core compares those with the reference exit of
+    // their own family, so a dual-stack line's v4 and v6 addresses are not read as a split route.
+    return { id: probe, group: groupOf[probe], ip, org: (g0 && g0.org) || "", asn: (g0 && g0.asn) || null, ...(stack ? { stack: true } : {}) };
   });
   // the core keys an exit by its ASN, else by the address's network; the same key is rebuilt from what the core
   // kept (its first address and ASN), so each answer lands in the exit the core put it in
@@ -164,9 +168,11 @@ export function findings(probes, exits, cf, tzCc, nat) {
   // routing: mainland sites vs. sites abroad
   R.route = cn && cn !== abroad ? { s: "info", k: "split", v: { a: cn, b: abroad } } : { s: "ok", k: "one", v: { a: abroad } };
   // exceptions: any probe abroad (lookup services, AI, sites, single-stack hosts) on another exit than the rest of the
-  // world. When every IPv6-only host is in one group they stand as one item, "@v6" (the IPv6 row says why).
+  // world. A single-stack host is only an exception against a reference exit that has an address of its own family: on
+  // a dual-stack line the two families are different exits by nature, and the IPv6 row is where that is judged. When
+  // every IPv6-only host is in one group they stand as one item, "@v6" (the IPv6 row says why).
   const odd = {}, v6only = probes.filter(p => p.g === "stack" && p.fam === 6).map(p => p.id);
-  for (const p of probes) if (["intl", "ai", "web", "stack"].includes(p.g) && of[p.id] && !of[p.id].includes(abroad)) (odd[of[p.id][0]] = odd[of[p.id][0]] || []).push(p.id);
+  for (const p of probes) if (["intl", "ai", "web", "stack"].includes(p.g) && of[p.id] && !of[p.id].includes(abroad) && !(p.fam && !byL[abroad]["v" + p.fam])) (odd[of[p.id][0]] = odd[of[p.id][0]] || []).push(p.id);
   const groups = Object.entries(odd).map(([x, list]) => ({ x, list: v6only.every(id => list.includes(id)) ? ["@v6", ...list.filter(id => !v6only.includes(id))] : list }));
   R.except = groups.length ? { s: "info", k: "some", v: { groups } } : { s: "ok", k: "none", v: {} };
   // AI region: the country ChatGPT and Claude see (their own trace), and whether they serve it
