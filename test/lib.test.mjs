@@ -78,6 +78,10 @@ test("anchors: path and kind are two dimensions; no owner information is unknown
     { ip: "5.5.5.5", probe: "aintl" }, { ip: "5.5.5.5", probe: "ipsb" }], geo, GROUP_OF, "off", { cn: "1.1.1.1", intl: "5.5.5.5" });
   // the anchor says which route an exit is on; the kind is who owns it
   assert.deepEqual(E.map(e => [e.letter, e.kind, e.path]), [["D", "direct", "cn"], ["P", "proxy", "intl"]]);
+  // Cloudflare's own network is a proxy with or without WARP; WARP on is the reason it gives
+  const CF = { cc: "JP", asn: 13335, org: "Cloudflare, Inc." };
+  assert.deepEqual(groupExits([{ ip: "8.8.8.8", probe: "ipsb" }], { "8.8.8.8": CF }, GROUP_OF, "off").map(e => [e.kind, e.dc, e.warp]), [["proxy", true, false]]);
+  assert.deepEqual(groupExits([{ ip: "8.8.8.8", probe: "ipsb" }], { "8.8.8.8": CF }, GROUP_OF, "on").map(e => [e.kind, e.dc, e.warp]), [["proxy", false, true]]);
   // a VPN brand's exit follows the anchor too, and is still a proxy
   const V = groupExits([{ ip: "9.9.9.9", probe: "aintl" }], { "9.9.9.9": { cc: "SE", asn: 64500, org: "Mullvad VPN AB" } }, GROUP_OF, "off", { intl: "9.9.9.9" });
   assert.deepEqual(V.map(e => [e.letter, e.kind, e.path]), [["P", "proxy", "intl"]]);
