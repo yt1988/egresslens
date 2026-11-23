@@ -47,6 +47,7 @@ export default {
   v_port_udp: "UDP만 {b} 경유로 통하고, TCP는 어느 포트도 연결되지 않아요",
   ex_tun: "터널 경유 가능성(MSS {n})",
   ex_seen: "이 출구를 본 사이트",
+  ex_relay: "iCloud 비공개 릴레이: 이 출구와 위치는 Apple이 선택한 대체 위치이며 내 회선이 아닙니다.",
   hide: "IP 숨기기",
   show: "IP 보기",
   sniff: "확인 지점에 묻는 중…",

@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry } from "../src/lib.mjs";
 import { PROBES, GROUPS } from "../src/probes.mjs";
+import { isRelayIp } from "../src/relay.mjs";
 
 const P = id => PROBES.find(p => p.id === id);
 const GROUP_OF = Object.fromEntries(PROBES.map(p => [p.id, p.read === "stun" ? "udp" : p.g]));
@@ -170,6 +171,24 @@ test("checks: one exit, a service on its own route, no WebRTC answer", () => {
   assert.ok(Object.values(findings(PROBES, [], {}, "US")).every(r => r.s === "none"));
 });
 
+test("iCloud Private Relay: an exit from Apple's ranges is named as the relay, not only a proxy", () => {
+  // Apple's list has 104.28.83.5 and 2a09:bac3:2370::/45 as Shanghai and Yancheng exits: a station's false P2
+  assert.equal(isRelayIp("104.28.83.5"), true);
+  assert.equal(isRelayIp("2a09:bac3:2372:2787::3f0:12"), true);
+  // Cloudflare's own addresses outside the list are not relay exits
+  assert.equal(isRelayIp("104.16.1.1"), false);
+  assert.equal(isRelayIp("2606:4700::1"), false);
+  const geo = {
+    "104.28.83.5": { cc: "CN", city: "Shanghai", asn: 13335, org: "Cloudflare, Inc." },
+    "2a09:bac3:2372:2787::3f0:12": { cc: "CN", city: "Yancheng", asn: 13335, org: "Cloudflare, Inc." },
+  };
+  const E = groupExits([{ ip: "104.28.83.5", probe: "chatgpt" }, { ip: "2a09:bac3:2372:2787::3f0:12", probe: "radar6" }], geo, GROUP_OF, "off");
+  assert.deepEqual(E.map(e => [e.letter, e.kind, e.relay]), [["P", "proxy", true]]);
+  // the relay mark is in the link, so a shared result says the same
+  const h = encodeShare({ ts: 1.7e12, tz: "CN", exits: E, rows: { chatgpt: { l: ["P"], ms: 5 } }, place: false });
+  assert.equal(parseShare(h, PROBES.map(p => p.id)).exits[0].relay, true);
+});
+
 test("exceptions: a single-stack probe needs a reference exit of its own family", () => {
   // every dual-stack probe abroad on a v4-only proxy; the IPv6-only hosts on a direct v6 exit. The two families are
   // different exits, but the abroad exit has no IPv6 address to compare them with, so they are not an exception:
@@ -181,10 +200,11 @@ test("exceptions: a single-stack probe needs a reference exit of its own family"
   assert.equal(F.v6.s, "bad");
 });
 
-test("time zones: the site's one table, with the zone it still lacks", () => {
+test("time zones: the site's one table", () => {
   assert.equal(tzCountry("Asia/Shanghai"), "CN");
   assert.equal(tzCountry("Europe/Brussels"), "BE");
-  assert.equal(tzCountry("Asia/Tehran"), null);   // src/app.js keeps this one until the shared table has it
+  assert.equal(tzCountry("Asia/Tehran"), "IR");
+  assert.equal(tzCountry("America/Argentina/Buenos_Aires"), "AR");
 });
 
 test("odd rows: probes on another exit than their kind, and a WebRTC leak", () => {

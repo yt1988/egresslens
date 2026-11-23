@@ -45,10 +45,8 @@
   $("#lang").onchange = e => { const l = e.target.value; store.set(K.lang, l); location.href = (S.shared ? D.paths : D.home)[l] + location.hash; };
 
   /* ---------- probes ---------- */
-  // The browser's time zone → country from the shared core (src/egress.js), the site's one table. Asia/Tehran is the
-  // one zone this page covers that the core's table does not list yet (reported 2026-11-23); drop it once it does.
-  const EXTRA_TZ = { "Asia/Tehran": "IR" };
-  const tzCc = () => { try { const z = Intl.DateTimeFormat().resolvedOptions().timeZone; return tzCountry(z) || EXTRA_TZ[z] || ""; } catch (e) { return ""; } };
+  // The browser's time zone → country from the shared core (src/egress.js), the site's one table.
+  const tzCc = () => { try { return tzCountry(Intl.DateTimeFormat().resolvedOptions().timeZone) || ""; } catch (e) { return ""; } };
   const GROUP_OF = Object.fromEntries(PROBES.map(p => [p.id, p.read === "stun" ? "udp" : p.g]));
   const NAME_OF = id => { const p = PROBES.find(x => x.id === id); return !p ? "" : p.self ? t("self_name") : p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name; };
   const isStun = p => p.read === "stun";
@@ -186,7 +184,8 @@
     const seen = seenNames(e);
     return `<li class="ex">${chip(e.letter, true)}<div class="ex-b">` +
       `<div class="where">${flag(e.cc)}<b>${esc(whereOf(e))}</b>${e.org || e.asn ? `<span class="m">${esc(e.org)}${e.asn ? (e.org ? " · " : "") + asRef(e.asn) : ""}</span>` : ""}</div>` +
-      `<div class="ips">${ips}</div>` + (seen ? `<div class="m seen">${esc(t("ex_seen"))}${esc(t("colon"))}${esc(seen)}</div>` : "") +
+      `<div class="ips">${ips}</div>` + (e.relay ? `<div class="relay">${esc(t("ex_relay"))}</div>` : "") +
+      (seen ? `<div class="m seen">${esc(t("ex_seen"))}${esc(t("colon"))}${esc(seen)}</div>` : "") +
       (tunOf(e) ? `<div class="m tun">${esc(t("ex_tun", { n: tunOf(e) }))}</div>` : "") + `</div></li>`;
   };
   // the MSS 1ms.dog's TCP 443 read, when this exit carried that connection and the MSS suggests a tunnel
@@ -642,7 +641,7 @@
     // the data-center/WARP flags that make the D/P label, IPv4/IPv6, and the MSS hint of a tunnel
     const exits = S.exits.map(e => ({
       l: e.letter, k: e.kind, cc: e.cc || null, ips: e.ips.map(maskIp), probes: e.probes, ...(e.path && e.path !== "unknown-path" ? { path: e.path } : {}),
-      ...(e.dc ? { dc: 1 } : {}), ...(e.warp ? { warp: 1 } : {}), ...(e.v4 ? { v4: 1 } : {}), ...(e.v6 ? { v6: 1 } : {}),
+      ...(e.dc ? { dc: 1 } : {}), ...(e.warp ? { warp: 1 } : {}), ...(e.relay ? { relay: 1 } : {}), ...(e.v4 ? { v4: 1 } : {}), ...(e.v6 ? { v6: 1 } : {}),
       ...(tunOf(e) ? { tun: tunOf(e) } : {}),
     }));
     // the check rows as the page decided them. Their "which probes" lists (except/port) are left out: the same

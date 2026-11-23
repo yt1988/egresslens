@@ -36,7 +36,7 @@ The two anchors are destinations no split-tunnel list names, one in mainland Chi
 the route a proxy's rules did not choose, so they tell a split route from a single one. They say which route an exit
 is on; whether that route is direct or a proxy comes from who owns the address.
 
-From the answers the page reports split routing (mainland sites vs. abroad), services that take their own route, WebRTC leaks (UDP leaves through your own line while websites see a proxy), the NAT type (cone or symmetric, from one connection that asks every STUN server), rules by port or protocol (TCP proxied, UDP direct), a tunnel hint from a small MSS, IPv6 leaks, a time zone that doesn't match the exit country, and Cloudflare WARP.
+From the answers the page reports split routing (mainland sites vs. abroad), services that take their own route, WebRTC leaks (UDP leaves through your own line while websites see a proxy), the NAT type (cone or symmetric, from one connection that asks every STUN server), rules by port or protocol (TCP proxied, UDP direct), a tunnel hint from a small MSS, IPv6 leaks, a time zone that doesn't match the exit country, and Cloudflare WARP. An exit inside Apple's published iCloud Private Relay ranges is named as that relay: it is a proxy path of Apple's, not the visitor's own proxy, and the location it shows is the alternative location Apple picked.
 
 **Private by design:** the site is static files. Your browser talks to each probe directly; no result is sent to the site. The site's own probes (`/_ms/me`, the two anchors and the Tokyo server) send back the address they see and keep no record. "Hide IPs" masks addresses for screenshots.
 

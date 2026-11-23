@@ -8,7 +8,8 @@
     "test": "node scripts/build.mjs --check && node --test \"test/*.test.mjs\"",
     "dev": "node scripts/dev.mjs",
     "verify": "node scripts/verify.mjs",
-    "og": "node scripts/og.mjs"
+    "og": "node scripts/og.mjs",
+    "relay": "node scripts/relay.mjs"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

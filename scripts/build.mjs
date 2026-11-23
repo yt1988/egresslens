@@ -60,24 +60,28 @@ export async function build({ check = false } = {}) {
   const langs = LANGS.filter(([l]) => I[l]);
   const tpl = await readFile(new URL("page.html", src), "utf8");
 
-  // src/egress.js is the site's shared exit core (vendored from 1ms.dog/src/egress.js): lib.mjs imports it by name for
-  // the tests, and the bundle gets the same file inlined, with the imported names aliased (the test import is dropped),
-  // so rules and page cannot drift apart.
-  const core = (await readFile(new URL("egress.js", src), "utf8")).replace(/^export /gm, "");
+  // src/egress.js is the site's shared exit core (vendored from 1ms.dog/src/egress.js) and src/relay.mjs the digest of
+  // Apple's Private Relay list. lib.mjs imports both by name for the tests; the bundle gets the same files inlined,
+  // with the imported names aliased and the import lines dropped, so source and page cannot drift apart.
+  const MODULES = ["egress.js", "relay.mjs"];
   const libRaw = await readFile(new URL("lib.mjs", src), "utf8");
-  const imp = /^import \{([^}]*)\} from "\.\/egress\.js";$/m.exec(libRaw);
-  if (!imp) throw new Error('src/lib.mjs must import the shared core from "./egress.js"');
-  const alias = imp[1].split(",").map(s => s.trim()).map(s => {
-    const [name, as = name] = s.split(/\s+as\s+/);
-    if (as === name) throw new Error(`src/lib.mjs: import { ${name} } needs an alias (as core…) for the inlined build`);
-    return `${as} = ${name}`;
-  }).join(", ");
+  const inline = [], aliases = [];
+  for (const file of MODULES) {
+    const imp = new RegExp(`^import \\{([^}]*)\\} from "\\./${file.replace(/\./g, "\\.")}";$`, "m").exec(libRaw);
+    if (!imp) throw new Error(`src/lib.mjs must import "./${file}"`);
+    for (const s of imp[1].split(",").map(x => x.trim())) {
+      const [name, as = name] = s.split(/\s+as\s+/);
+      if (as === name) throw new Error(`src/lib.mjs: import { ${name} } from "./${file}" needs an alias for the inlined build`);
+      aliases.push(`${as} = ${name}`);
+    }
+    inline.push((await readFile(new URL(file, src), "utf8")).replace(/^export /gm, ""));
+  }
   // src/lib.mjs (the pure logic the tests import) goes inside the app's scope, at its /* @lib */ marker
-  const lib = libRaw.replace(imp[0], "").replace(/^export /gm, "");
+  const lib = libRaw.replace(/^import \{[^}]*\} from "\.\/[\w.-]+";\n?/gm, "").replace(/^export /gm, "");
   const appSrc = await readFile(new URL("app.js", src), "utf8");
   if (!appSrc.includes("/* @lib */")) throw new Error("src/app.js has no /* @lib */ marker");
   const probes = PROBES.map(({ id, g, name, host, url, read, fam, self, anchor }) => ({ id, g, name, host, url, read, ...(fam ? { fam } : {}), ...(self ? { self } : {}), ...(anchor ? { anchor } : {}) }));
-  const appFull = `const PROBES = ${JSON.stringify(probes)}, GROUPS = ${JSON.stringify(GROUPS)};\n` + core + `\nconst ${alias};\n`
+  const appFull = `const PROBES = ${JSON.stringify(probes)}, GROUPS = ${JSON.stringify(GROUPS)};\n` + inline.join("\n") + `\nconst ${aliases.join(", ")};\n`
     + appSrc.replace("/* @lib */", () => lib);
   new Function(appFull);                                                // must parse
   const cssFull = (await Promise.all(["fonts.css", "base.css", "style.css"].map(f => readFile(new URL(f, src), "utf8")))).join("\n");

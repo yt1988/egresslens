@@ -10,6 +10,11 @@ asks about 60 destinations at once and groups the addresses they report into exi
 
 - **One exit per network**, keyed by ASN when a lookup knows it, else by the address prefix (/16 for IPv4, /64 for
   IPv6). An ISP's IPv4 and IPv6 addresses are then one exit, not two.
+- **iCloud Private Relay** leaves from Cloudflare and Akamai addresses, so its exit looks like a data-centre one. Apple
+  publishes the egress ranges (`mask-api.icloud.com/egress-ip-ranges.csv`); the page cannot read that 12 MB list (no
+  CORS header), so `src/relay.mjs` is a generated digest of it (`npm run relay`). An exit whose address is in the
+  digest keeps its P label and gets a sentence of its own: the location shown is the "alternative location" Apple
+  picked for the visitor, which is exactly what the sites see.
 - **Direct (D), proxy (P) or can't tell (?)** comes from the network's owner: a cloud or hosting company, a VPN brand
   (regexes over the org name), an ASN on the data-centre list, or Cloudflare WARP is a proxy; a network whose owner no
   lookup knows is unknown, never read as direct. A residential proxy, or a VPN on an ISP's network, can't be told

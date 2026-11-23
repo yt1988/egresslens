@@ -47,6 +47,7 @@ export default {
   v_port_udp: "只有 UDP 通，走 {b}；TCP 各連接埠都連不上",
   ex_tun: "可能經過隧道（MSS {n}）",
   ex_seen: "看到它的網站",
+  ex_relay: "iCloud 私密轉送：這個出口和這個位置是 Apple 替你選的替代位置，不是你的實際線路。",
   hide: "隱藏 IP",
   show: "顯示 IP",
   sniff: "正在詢問各個檢測點…",

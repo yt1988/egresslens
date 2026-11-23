@@ -4,6 +4,7 @@
 // Exit grouping and the direct/proxy/unknown reading come from the site-wide core in src/egress.js (vendored from
 // 1ms.dog; the rules are in its docs/egress-contract.md): this file only adapts its output to what the page shows.
 import { groupExits as coreExitGroups, kindOf as coreKind, pathOf as corePath, AI_BLOCKED as coreAIBlocked, tzCountry as coreTzCountry } from "./egress.js";
+import { isRelayIp as relayIp } from "./relay.mjs";
 
 /* ---------- addresses ---------- */
 export const fam = x => x.includes(":") ? 6 : 4;
@@ -110,6 +111,8 @@ export function groupExits(seen, geo, groupOf, warp, anchors = {}) {
     e.dc = k.why === "dc" || k.why === "vpn"; // the data-centre or VPN name that made it a proxy
     e.warp = k.why === "warp";
     e.path = corePath(e.core, anchors);       // cn, intl, both, other, or unknown-path
+    // iCloud Private Relay leaves from Apple's published ranges (src/relay.mjs): still a proxy, but named for itself
+    e.relay = e.ips.some(relayIp);
     const gs = e.probes.map(p => groupOf[p]);
     e.score = (gs.includes("cn") ? 2 : 0) + (gs.includes("udp") ? 1 : 0);
     for (const ip of e.ips) e.v6 = e.v6 || fam(ip) === 6, e.v4 = e.v4 || fam(ip) === 4;
@@ -124,7 +127,7 @@ export function groupExits(seen, geo, groupOf, warp, anchors = {}) {
 export function labelExits(E) {
   for (const e of E) {
     if (!e.kind) e.kind = e.dc || e.warp ? "proxy" : "direct";
-    e["v4"] = !!e.v4; e["v6"] = !!e.v6;
+    e["v4"] = !!e.v4; e["v6"] = !!e.v6; e.relay = !!e.relay;
   }
   for (const [kind, ch] of [["direct", "D"], ["proxy", "P"], ["unknown", "?"]]) {
     const of = E.filter(e => e.kind === kind);
@@ -279,7 +282,8 @@ export function verdictOf(finds, exits) {
 // out again from these, so a shared result reads exactly like the sender's. Version 1:
 // #r=1|<unix time base36>|<time-zone country>|<exits>|<probes>[|<nat>]
 //   exits:  cc~city~org~asn~flags joined by ","  (flags: d datacenter or VPN, w WARP, i direct, p proxy, u can't
-//           tell, 4 / 6 has IPv4 / IPv6; a link made before kinds has no i/p/u and is read from d/w)
+//           tell, r iCloud Private Relay, 4 / 6 has IPv4 / IPv6; a link made before kinds has no i/p/u and is read
+//           from d/w)
 //   probes: id:<seen>:<ms base36>:<colo>:<loc> joined by ",", where <seen> is the exits' indexes joined by ".", or
 //           "x" and why it failed (t timeout, h<status> http, n net, p parse, s stun)
 //   nat:    "n", then c cone, s symmetric or u can't tell, then m when one exit has several addresses (absent in links
@@ -291,7 +295,7 @@ const NAT = { cone: "c", sym: "s", none: "u" }, NAT_OF = Object.fromEntries(Obje
 const KIND = { direct: "i", proxy: "p", unknown: "u" }, KIND_OF = Object.fromEntries(Object.entries(KIND).map(([k, v]) => [v, k]));
 export function encodeShare({ ts, tz, exits, rows, place, nat }) {
   const ex = exits.map(e => [e.cc, place ? e.city : "", place ? e.org : "", place && e.asn || "",
-    (e.dc ? "d" : "") + (e.warp ? "w" : "") + (KIND[e.kind] || "") + (e.v4 ? "4" : "") + (e.v6 ? "6" : "")].map(enc).join("~")).join(",");
+    (e.dc ? "d" : "") + (e.warp ? "w" : "") + (KIND[e.kind] || "") + (e.relay ? "r" : "") + (e.v4 ? "4" : "") + (e.v6 ? "6" : "")].map(enc).join("~")).join(",");
   const at = Object.fromEntries(exits.map((e, i) => [e.letter, i]));
   const rs = Object.entries(rows).map(([id, r]) => {
     const w = r.why || {}, cf = r.cf || {};
@@ -311,7 +315,7 @@ export function parseShare(h, ids) {
     const [cc = "", city = "", org = "", asn = "", f = ""] = x.split("~").map(dec);
     const kind = KIND_OF[["i", "p", "u"].find(k => f.includes(k))] || "";
     return { key: "s" + i, ips: [], probes: [], cc: /^[A-Z]{2}$/.test(cc) ? cc : "", city: city.slice(0, 80), org: org.slice(0, 120), asn: +asn || null,
-      dc: f.includes("d"), warp: f.includes("w"), ...(kind ? { kind } : {}), v4: f.includes("4"), v6: f.includes("6") };
+      dc: f.includes("d"), warp: f.includes("w"), relay: f.includes("r"), ...(kind ? { kind } : {}), v4: f.includes("4"), v6: f.includes("6") };
   }) : [];
   const rows = {};
   for (const p of m[4].split(",")) {

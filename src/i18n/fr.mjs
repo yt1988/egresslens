@@ -47,6 +47,7 @@ export default {
   v_port_udp: "Seul l’UDP passe, par {b} ; aucun port TCP ne se connecte",
   ex_tun: "Tunnel possible (MSS {n})",
   ex_seen: "Vu par",
+  ex_relay: "Relais privé iCloud : Apple a choisi cette sortie et cette localisation pour vous ; ni l'une ni l'autre n'est votre ligne.",
   hide: "Masquer les IP",
   show: "Afficher les IP",
   sniff: "Interrogation des points de test…",
