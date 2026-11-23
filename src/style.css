@@ -34,14 +34,15 @@ ul { list-style: none; margin: 0; padding: 0; }
 .sec-h { display: flex; align-items: center; gap: 8px; height: 22px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
 .mini { border: 1px solid var(--line); background: transparent; border-radius: 6px; font-size: 12px; padding: 1px 7px; cursor: pointer; color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 500; }
 
-/* exit labels: D (your own line) green, P (proxy) amber, and each numbered exit its own hue. A tinted chip with the
-   exit's color as text, the same on the exit card, in the findings and on every probe row. */
+/* exit labels: D (direct) green, P (proxy) amber, ? (owner unknown) grey, and each numbered exit its own hue. A tinted
+   chip with the exit's color as text, the same on the exit card, in the findings and on every probe row. */
 .lt { --c: var(--e-p1); display: inline-grid; place-items: center; min-width: 20px; height: 18px; padding: 0 4px; border-radius: 5px;
   font: 700 12px/1 var(--f-num); font-style: normal; vertical-align: -3px; flex: none;
   color: var(--c); background: color-mix(in srgb, var(--c) 13%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent); }
 .lt.big { min-width: 34px; height: 34px; font-size: 14px; border-radius: 9px; }
-.lt.k-local { --c: var(--e-d); } .lt.k-local.n2 { --c: var(--e-d2); }
+.lt.k-direct { --c: var(--e-d); } .lt.k-direct.n2 { --c: var(--e-d2); }
 .lt.k-proxy.n2 { --c: var(--e-p2); } .lt.k-proxy.n3 { --c: var(--e-p3); } .lt.k-proxy.n4 { --c: var(--e-p4); }
+.lt.k-unknown { --c: var(--muted); }
 
 #exList { display: flex; flex-direction: column; gap: 8px; }
 /* each exit: a light outlined card, its chip carrying the color */

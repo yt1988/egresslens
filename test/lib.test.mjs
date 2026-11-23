@@ -60,16 +60,50 @@ function scenario() {
   return { seen, ok };
 }
 
-test("exits: grouped by network, local first, labeled D/P", () => {
+test("exits: grouped by network, direct first, labeled D/P, from the shared core", () => {
   const { seen } = scenario();
   const E = groupExits(seen, { ...GEO, [LOCAL6]: GEO[LOCAL4], [PROXY6]: GEO[PROXY4] }, GROUP_OF, "off");
   assert.equal(E.length, 2);
-  assert.deepEqual(E.map(e => [e.letter, e.kind, e.asn]), [["D", "local", 4808], ["P", "proxy", 16509]]);
+  assert.deepEqual(E.map(e => [e.letter, e.kind, e.asn]), [["D", "direct", 4808], ["P", "proxy", 16509]]);
   assert.ok(E[0].v4 && E[0].v6 && E[1].v4 && E[1].v6);
   assert.deepEqual(exitOfProbe(E).chatgpt, ["P"]);
-  // two proxies are numbered, a single local line is not
+  // two proxies are numbered, a single direct line is not
   const E2 = groupExits([...seen, { ip: "47.76.29.28", probe: "cloudflare" }], { ...GEO, [LOCAL6]: GEO[LOCAL4], [PROXY6]: GEO[PROXY4], "47.76.29.28": { cc: "HK", asn: 45102, org: "Alibaba (US) Technology" } }, GROUP_OF, "off");
   assert.deepEqual(E2.map(e => e.letter), ["D", "P1", "P2"]);
+});
+
+test("anchors: path and kind are two dimensions; no owner information is unknown, not direct", () => {
+  const geo = { "1.1.1.1": { cc: "CN", city: "Beijing", asn: 4808, org: "China Unicom" }, "5.5.5.5": { cc: "JP", city: "Tokyo", asn: 16509, org: "Amazon.com" } };
+  const E = groupExits([{ ip: "1.1.1.1", probe: "acn" }, { ip: "1.1.1.1", probe: "ipip" },
+    { ip: "5.5.5.5", probe: "aintl" }, { ip: "5.5.5.5", probe: "ipsb" }], geo, GROUP_OF, "off", { cn: "1.1.1.1", intl: "5.5.5.5" });
+  // the anchor says which route an exit is on; the kind is who owns it
+  assert.deepEqual(E.map(e => [e.letter, e.kind, e.path]), [["D", "direct", "cn"], ["P", "proxy", "intl"]]);
+  // a VPN brand's exit follows the anchor too, and is still a proxy
+  const V = groupExits([{ ip: "9.9.9.9", probe: "aintl" }], { "9.9.9.9": { cc: "SE", asn: 64500, org: "Mullvad VPN AB" } }, GROUP_OF, "off", { intl: "9.9.9.9" });
+  assert.deepEqual(V.map(e => [e.letter, e.kind, e.path]), [["P", "proxy", "intl"]]);
+  // an exit no lookup knows: "?", unknown, and the verdict says so instead of calling it direct
+  const U = groupExits([{ ip: "7.7.7.7", probe: "aintl" }, { ip: "7.7.7.7", probe: "ipsb" }], {}, GROUP_OF, "off", { intl: "7.7.7.7" });
+  assert.deepEqual(U.map(e => [e.letter, e.kind]), [["?", "unknown"]]);
+  assert.equal(verdictOf(findings(PROBES, U, {}, "", null), U), "unknown");
+});
+
+test("anchors: the routing row compares the anchors, not the group's majority", () => {
+  const { seen } = scenario();
+  // two mainland sites take another proxy while the anchors and the rest stay where they were: still one route each
+  const HK = "47.76.29.28";
+  const seen2 = seen.map(s => ["iqiyi", "ipifycn"].includes(s.probe) ? { ...s, ip: HK } : s);
+  const geo2 = { ...GEO, [LOCAL6]: GEO[LOCAL4], [PROXY6]: GEO[PROXY4], [HK]: { cc: "HK", city: "Hong Kong", asn: 45102, org: "Alibaba (US) Technology" } };
+  const exits = groupExits(seen2, geo2, GROUP_OF, "off", { cn: LOCAL4, intl: PROXY6 });
+  const F = findings(PROBES, exits, cfAll("JP"), "CN");
+  assert.deepEqual(F.route, { s: "info", k: "split", v: { a: "D", b: "P2" } });
+  // the IPv6-only hosts are the exceptions; a mainland site on another exit does not change the route the anchor found
+  assert.deepEqual(F.except.v.groups, [{ x: "D", list: ["@v6"] }]);
+  // without the anchors the row falls back to each group's majority (an old share link): four of the six mainland
+  // probes now on the proxy make the majority say "one route", while the anchor still says where mainland China goes
+  const many = seen.map(s => ["ipip", "iqiyi", "ipifycn", "dnspod4"].includes(s.probe) ? { ...s, ip: PROXY4 } : s);
+  const exits2 = groupExits(many, { ...GEO, [LOCAL6]: GEO[LOCAL4], [PROXY6]: GEO[PROXY4] }, GROUP_OF, "off", { cn: LOCAL4, intl: PROXY6 });
+  assert.deepEqual(findings(PROBES, exits2, cfAll("JP"), "CN").route, { s: "info", k: "split", v: { a: "D", b: "P" } });
+  assert.deepEqual(findings(PROBES.map(p => ({ ...p, anchor: null })), exits2, cfAll("JP"), "CN").route, { s: "ok", k: "one", v: { a: "P" } });
 });
 
 const BOTH = () => ({ ...GEO, [LOCAL6]: GEO[LOCAL4], [PROXY6]: GEO[PROXY4] });
@@ -166,6 +200,18 @@ test("share link: no addresses, and the receiver reads the same findings", () =>
   }
   assert.equal(parseShare("#r=2|x", []), null);
   assert.equal(parseShare("#nope", []), null);
+});
+
+test("share link: an exit's kind travels with it, and links from before kinds still open", () => {
+  const ids = PROBES.map(p => p.id);
+  const P4 = groupExits([{ ip: "7.7.7.7", probe: "ipsb" }], { "7.7.7.7": { cc: "JP", asn: 16509, org: "Amazon.com" } }, GROUP_OF, "off");
+  const hp = encodeShare({ ts: 1.7e12, tz: "JP", exits: P4, rows: { ipsb: { l: ["P"], ms: 10 } }, place: false });
+  assert.deepEqual(parseShare(hp, ids).exits.map(e => [e.letter, e.kind]), [["P", "proxy"]]);
+  // an exit with no owner information: "?" in the page and "unknown" in the verdict, never direct
+  const U = groupExits([{ ip: "7.7.7.7", probe: "ipsb" }], {}, GROUP_OF, "off");
+  const hu = encodeShare({ ts: 1.7e12, tz: "", exits: U, rows: {}, place: false });
+  assert.deepEqual(parseShare(hu, ids).exits.map(e => [e.letter, e.kind]), [["?", "unknown"]]);
+  assert.equal(parseShare(hu.replace("u4", "4"), ids).exits[0].kind, "direct", "a link from before kinds: the old reading");
 });
 
 test("WebRTC: a leak even when one site abroad is routed direct", () => {

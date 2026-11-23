@@ -2,7 +2,7 @@
 
 [English](README.md) · **简体中文**
 
-不同的网站，看到的是你的哪个 IP？带规则的代理和 VPN 会按网站选线路，只查一次“我的 IP”只能看到一条线路。[出口照妖镜](https://egress.1ms.dog) 同时询问 51 个探测器，把结果归成几个出口：**D** 是你自己的线路（直连），**P** 是代理；同类有多个时编号为 D1、D2、P1、P2……
+不同的网站，看到的是你的哪个 IP？带规则的代理和 VPN 会按网站选线路，只查一次“我的 IP”只能看到一条线路。[出口照妖镜](https://egress.1ms.dog) 同时询问 66 个探测器，把结果归成几个出口：**D** 是直连，**P** 是代理，**?** 是查不到归属的出口；同类有多个时编号为 D1、D2、P1、P2……
 
 **在线使用：** https://egress.1ms.dog
 
@@ -22,8 +22,8 @@
 
 | 分组 | 内容 |
 |---|---|
-| 国内网站 | IPIP.NET、爱奇艺、ipify.cn、DNSPod（IPv4 和 IPv6），分流规则通常让它们直连 |
-| IP 查询服务 | 本站（1ms.dog shell 的 `/_ms/me`，即 Cloudflare 看到的这次连接；自行部署时用 `/cdn-cgi/trace`）、IP.SB、ipinfo.io、ipapi.co、ipwho.is、GeoJS、ipleak.net、ident.me、ip.guide、icanhazip、BigDataCloud |
+| 国内网站 | IPIP.NET、爱奇艺、ipify.cn、DNSPod（IPv4 和 IPv6），以及 1ms.dog 自己国内机器上的锚点（`probe.dog.1msapp.com`）：分流规则通常让它们直连 |
+| IP 查询服务 | 本站（1ms.dog shell 的 `/_ms/me`，即 Cloudflare 看到的这次连接；自行部署时用 `/cdn-cgi/trace`）、境外锚点（`probe.1ms.dog`）、IP.SB、ipinfo.io、ipapi.co、ipwho.is、GeoJS、ipleak.net、ident.me、ip.guide、icanhazip、BigDataCloud |
 | AI 服务 | ChatGPT、OpenAI、Sora、Claude、Anthropic、Grok、Perplexity、Copilot、Mistral、Poe、Character.AI、DeepL |
 | 常用网站 | Cloudflare、1.1.1.1、GitLab、npm、Notion、Linear、Zoom、Medium、Coinbase、Crunchyroll、Patreon、Shopify |
 | 仅 IPv4 / 仅 IPv6 | 单栈站点上的 IP.SB、Cloudflare Radar、ipify、icanhazip |
@@ -32,9 +32,11 @@
 
 AI 服务和常用网站读取的是各站点自己域名上的 Cloudflare `/cdn-cgi/trace`：它返回连接过来的地址，并带 `Access-Control-Allow-Origin: *`。所以页面能看到在你的规则下，chatgpt.com、claude.ai 实际看到的是哪个出口。
 
+两个锚点是任何分流清单都不会列出的目的地，一个在国内、一个在东京：它们看到的是代理规则没有选过的那条路，所以能分清「国内和境外走了不同的路」还是「只有一条路」。锚点只说明一个出口走的是哪条路；这条路上是直连还是代理，看的是地址的归属。
+
 页面据此给出结论：国内外分流、单独走一条线路的服务、WebRTC 泄露（网站看到代理，UDP 却从自己的线路出去）、NAT 类型（锥形或对称，用一个连接同时问所有 STUN 服务器得出）、按端口或协议分流（TCP 走代理、UDP 直连）、MSS 偏小时的隧道提示、IPv6 泄露、时区与出口国家不一致，以及 Cloudflare WARP。
 
-**隐私：** 网站只有静态文件。浏览器直接连接每个探测器，结果不会发给本站。本站自己的检测点（`/_ms/me` 和东京服务器）只回传看到的地址，不记录。截图前可以用“隐藏 IP”遮住地址。
+**隐私：** 网站只有静态文件。浏览器直接连接每个探测器，结果不会发给本站。本站自己的检测点（`/_ms/me`、两个锚点和东京服务器）只回传看到的地址，不记录。截图前可以用“隐藏 IP”遮住地址。
 
 ## 自行部署
 

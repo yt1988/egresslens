@@ -2,7 +2,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Which IP addresses does the internet see you as? Rule-based proxies and VPNs pick a route per website, so one "what is my IP" check only sees its own route. [EgressLens](https://egress.1ms.dog) asks 51 probes at once and groups what they see into exits: **D** for your own line (direct), **P** for a proxy, numbered D1, D2, P1, P2… when there is more than one.
+Which IP addresses does the internet see you as? Rule-based proxies and VPNs pick a route per website, so one "what is my IP" check only sees its own route. [EgressLens](https://egress.1ms.dog) asks 66 probes at once and groups what they see into exits: **D** for a direct route, **P** for a proxy, **?** when the owner of an exit can't be looked up, numbered D1, D2, P1, P2… when there is more than one.
 
 **Live:** https://egress.1ms.dog
 
@@ -22,8 +22,8 @@ Which IP addresses does the internet see you as? Rule-based proxies and VPNs pic
 
 | Group | What it shows |
 |---|---|
-| Sites in mainland China | IPIP.NET, iQIYI, ipify.cn, DNSPod (IPv4 and IPv6): the route rules usually send direct |
-| IP lookup services | this site (the 1ms.dog shell's `/_ms/me`, Cloudflare's view of the connection; `/cdn-cgi/trace` when self-hosted), IP.SB, ipinfo.io, ipapi.co, ipwho.is, GeoJS, ipleak.net, ident.me, ip.guide, icanhazip, BigDataCloud |
+| Sites in mainland China | IPIP.NET, iQIYI, ipify.cn, DNSPod (IPv4 and IPv6), and an anchor on 1ms.dog's own mainland machine (`probe.dog.1msapp.com`): the route rules usually send direct |
+| IP lookup services | this site (the 1ms.dog shell's `/_ms/me`, Cloudflare's view of the connection; `/cdn-cgi/trace` when self-hosted), the abroad anchor (`probe.1ms.dog`), IP.SB, ipinfo.io, ipapi.co, ipwho.is, GeoJS, ipleak.net, ident.me, ip.guide, icanhazip, BigDataCloud |
 | AI services | ChatGPT, OpenAI, Sora, Claude, Anthropic, Grok, Perplexity, Copilot, Mistral, Poe, Character.AI, DeepL |
 | Popular sites | Cloudflare, 1.1.1.1, GitLab, npm, Notion, Linear, Zoom, Medium, Coinbase, Crunchyroll, Patreon, Shopify |
 | IPv4 only / IPv6 only | IP.SB, Cloudflare Radar, ipify, icanhazip on single-stack hosts |
@@ -32,9 +32,13 @@ Which IP addresses does the internet see you as? Rule-based proxies and VPNs pic
 
 AI services and popular sites are read through Cloudflare's `/cdn-cgi/trace` on each site's own domain: it returns the address that connected, with `Access-Control-Allow-Origin: *`. So the page sees exactly which exit chatgpt.com or claude.ai gets under your rules.
 
+The two anchors are destinations no split-tunnel list names, one in mainland China and one in Tokyo: what they see is
+the route a proxy's rules did not choose, so they tell a split route from a single one. They say which route an exit
+is on; whether that route is direct or a proxy comes from who owns the address.
+
 From the answers the page reports split routing (mainland sites vs. abroad), services that take their own route, WebRTC leaks (UDP leaves through your own line while websites see a proxy), the NAT type (cone or symmetric, from one connection that asks every STUN server), rules by port or protocol (TCP proxied, UDP direct), a tunnel hint from a small MSS, IPv6 leaks, a time zone that doesn't match the exit country, and Cloudflare WARP.
 
-**Private by design:** the site is static files. Your browser talks to each probe directly; no result is sent to the site. The site's own probes (`/_ms/me` and the Tokyo server) send back the address they see and keep no record. "Hide IPs" masks addresses for screenshots.
+**Private by design:** the site is static files. Your browser talks to each probe directly; no result is sent to the site. The site's own probes (`/_ms/me`, the two anchors and the Tokyo server) send back the address they see and keep no record. "Hide IPs" masks addresses for screenshots.
 
 ## Self-hosting
 

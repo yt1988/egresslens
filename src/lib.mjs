@@ -1,5 +1,9 @@
 // The page's pure logic: no DOM, no network. test/lib.test.mjs imports it as a module; scripts/build.mjs drops the
 // `export` keywords and inlines it into the page bundle at the /* @lib */ marker in src/app.js.
+//
+// Exit grouping and the direct/proxy/unknown reading come from the site-wide core in src/egress.js (vendored from
+// 1ms.dog; the rules are in its docs/egress-contract.md): this file only adapts its output to what the page shows.
+import { groupExits as coreExitGroups, kindOf as coreKind, pathOf as corePath, AI_BLOCKED as coreAIBlocked } from "./egress.js";
 
 /* ---------- addresses ---------- */
 export const fam = x => x.includes(":") ? 6 : 4;
@@ -61,41 +65,64 @@ export const srflxAt = line => { const ip = srflxOf(line); return ip && { ip, po
 export const tunneled = (ip, mss) => !!mss && mss <= (fam(ip) === 6 ? 1380 : 1400);
 
 /* ---------- exits ---------- */
-export const DC_RE = /amazon|google|microsoft|azure|digitalocean|vultr|choopa|constant company|linode|akamai|ovh|hetzner|oracle|alibaba|aliyun|tencent|huawei|m247|datacamp|cloudflare|leaseweb|contabo|hostinger|it7|racknerd|colocrossing|psychz|zenlayer|g-core|gcore|hostwinds|scaleway|ionos|kamatera|upcloud|bandwagon|dmit|cogent|quadranet|servers\.com|packet|equinix|fastly|cdn77|datapacket|tzulo|hostdare|greencloud|nexeon|frantech|buyvm|hosting|vps|data ?cent|mullvad|proton|nord|express ?vpn|surfshark|private internet|ucloud|kingsoft|baidu cloud|bytedance|volcano/i;
+// Regions where neither OpenAI (ChatGPT) nor Anthropic (Claude) offers its service, from the shared core.
+export const AI_BLOCKED = coreAIBlocked;
 // geo for an address: its own, or that of an address on the same network
 export function geoOf(geo, ip) {
   if (geo[ip]) return geo[ip];
   const y = Object.keys(geo).find(x => sameNet(x, ip));
   return y ? geo[y] : null;
 }
-// seen: [{ ip, probe }] (probe = its id); geo: ip → { cc, city, asn, org }; groupOf: probe id → group; warp: trace's warp.
-// One exit per network (ASN when known), so an ISP's IPv4 and IPv6 addresses are one exit, labeled D or P.
-// Order: local first (the network mainland-China sites and WebRTC tend to see), then by how many probes saw it.
-export function groupExits(seen, geo, groupOf, warp) {
-  const E = [];
+// seen: [{ ip, probe }] (probe = its id); geo: ip → { cc, city, asn, org }; groupOf: probe id → group; warp: trace's warp;
+// anchors: { cn, intl } the address each anchor probe saw.
+//
+// The grouping and the kind are the shared core's (src/egress.js): one exit per ASN when a lookup knows it, else per
+// /16 (IPv4) or /64 (IPv6); its kind is direct, proxy or unknown by who owns that network — never by the anchor it
+// matched, since a proxy's own exit follows an anchor too. The page adds every address an exit was seen at, its city
+// and country, the probes that saw it, and its path (which anchors it follows).
+// Order: direct first, then unknown, then proxies; within a kind by group and how many probes saw it.
+export function groupExits(seen, geo, groupOf, warp, anchors = {}) {
+  const answers = seen.map(({ ip, probe }) => {
+    const g0 = geoOf(geo, ip);
+    return { id: probe, group: groupOf[probe], ip, org: (g0 && g0.org) || "", asn: (g0 && g0.asn) || null };
+  });
+  // the core keys an exit by its ASN, else by the address's network; the same key is rebuilt from what the core
+  // kept (its first address and ASN), so each answer lands in the exit the core put it in
+  const keyOf = x => (x.asn ? "as" + x.asn : netOf(x.ip));
+  const E = coreExitGroups(answers).map(c => ({
+    key: keyOf(c), ip: c.ip, core: c, ips: [], probes: [], cc: "", city: "", asn: c.asn, org: c.org,
+  }));
+  const by = new Map(E.map(e => [e.key, e]));
   for (const { ip, probe } of seen) {
-    const g0 = geoOf(geo, ip), key = g0 && g0.asn ? "as" + g0.asn : "net" + netOf(ip);
-    let e = E.find(x => x.key === key);
-    if (!e) { e = { key, ips: [], probes: [], cc: "", city: "", asn: null, org: "" }; E.push(e); }
+    const g0 = geoOf(geo, ip), e = by.get(g0 && g0.asn ? "as" + g0.asn : netOf(ip));
+    if (!e) continue;
     if (!e.ips.includes(ip)) e.ips.push(ip);
     if (!e.probes.includes(probe)) e.probes.push(probe);
     if (g0) { e.cc = e.cc || g0.cc || ""; e.city = e.city || g0.city || ""; e.asn = e.asn || g0.asn || null; e.org = e.org || g0.org || ""; }
   }
   for (const e of E) {
-    e.dc = !!(e.org && DC_RE.test(e.org));
-    e.warp = e.asn === 13335 && !!warp && warp !== "off";
+    const k = coreKind(e, { warp });
+    e.kind = k.kind;                          // direct, proxy, or unknown: no owner information, never read as direct
+    e.dc = k.why === "dc" || k.why === "vpn"; // the data-centre or VPN name that made it a proxy
+    e.warp = k.why === "warp";
+    e.path = corePath(e.core, anchors);       // cn, intl, both, other, or unknown-path
     const gs = e.probes.map(p => groupOf[p]);
     e.score = (gs.includes("cn") ? 2 : 0) + (gs.includes("udp") ? 1 : 0);
+    for (const ip of e.ips) e.v6 = e.v6 || fam(ip) === 6, e.v4 = e.v4 || fam(ip) === 4;
   }
-  E.sort((a, b) => (a.dc || a.warp) - (b.dc || b.warp) || b.score - a.score || b.probes.length - a.probes.length || (a.key < b.key ? -1 : 1));
-  for (const e of E) for (const ip of e.ips) e.v6 = e.v6 || fam(ip) === 6, e.v4 = e.v4 || fam(ip) === 4;
+  const rank = e => e.kind === "direct" ? 0 : e.kind === "unknown" ? 1 : 2;
+  E.sort((a, b) => rank(a) - rank(b) || b.score - a.score || b.probes.length - a.probes.length || (a.key < b.key ? -1 : 1));
   return labelExits(E);
 }
-// Direct (D) or proxy (P): an exit on a datacenter network or WARP is a proxy, any other is the visitor's own line.
-// The label is D or P alone, numbered D1, D2… only when there is more than one of that kind.
+// Direct (D), proxy (P) or can't tell (?): the kind is the shared core's. The label is the letter alone, numbered D1,
+// D2… only when there is more than one exit of that kind. A result from a link made before kinds carries data-centre
+// and WARP flags only, so it keeps reading those.
 export function labelExits(E) {
-  for (const e of E) e.kind = e.dc || e.warp ? "proxy" : "local";
-  for (const [kind, ch] of [["local", "D"], ["proxy", "P"]]) {
+  for (const e of E) {
+    if (!e.kind) e.kind = e.dc || e.warp ? "proxy" : "direct";
+    e["v4"] = !!e.v4; e["v6"] = !!e.v6;
+  }
+  for (const [kind, ch] of [["direct", "D"], ["proxy", "P"], ["unknown", "?"]]) {
     const of = E.filter(e => e.kind === kind);
     of.forEach((e, i) => { e.letter = of.length > 1 ? ch + (i + 1) : ch; });
   }
@@ -116,8 +143,6 @@ function majority(ids, of) {
   const best = Object.entries(n).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0];
   return best ? best[0] : null;
 }
-// Regions where neither OpenAI (ChatGPT) nor Anthropic (Claude) offers its service: the AI row flags an AI exit there.
-export const AI_BLOCKED = ["CN", "HK", "MO", "RU", "BY", "IR", "KP", "SY", "CU"];
 const AI_CHECK = ["chatgpt", "openai", "claude", "anthropic"];
 // The check table. probes: the PROBES list; exits: groupExits(); cf: probe id → its Cloudflare trace ({ loc } = the
 // country that site sees); tzCc: country of the browser's time zone.
@@ -128,9 +153,13 @@ const AI_CHECK = ["chatgpt", "openai", "claude", "anthropic"];
 export function findings(probes, exits, cf, tzCc, nat) {
   const of = exitOfProbe(exits), byL = Object.fromEntries(exits.map(e => [e.letter, e]));
   const ids = g => probes.filter(p => p.g === g).map(p => p.id);
+  // The two anchor probes sit at destinations no split-tunnel list carries, so each shows the route mainland China
+  // and the rest of the world take. A group's majority is the fallback when an anchor did not answer (or an old
+  // share link, which has no anchor rows).
+  const anchor = k => { const p = probes.find(x => x.anchor === k); return p && of[p.id] ? of[p.id][0] : null; };
   const none = { s: "none", k: "none", v: {} };
   if (!exits.length) return { route: none, except: none, ai: none, rtc: none, port: none, nat: none, v6: none, tz: none };
-  const cn = majority(ids("cn"), of), abroad = majority([...ids("intl"), ...ids("ai"), ...ids("web")], of) || cn;
+  const cn = anchor("cn") || majority(ids("cn"), of), abroad = anchor("intl") || majority([...ids("intl"), ...ids("ai"), ...ids("web")], of) || cn;
   const R = {};
   // routing: mainland sites vs. sites abroad
   R.route = cn && cn !== abroad ? { s: "info", k: "split", v: { a: cn, b: abroad } } : { s: "ok", k: "one", v: { a: abroad } };
@@ -144,19 +173,20 @@ export function findings(probes, exits, cf, tzCc, nat) {
   const seen = AI_CHECK.filter(id => cf[id] && /^[A-Z]{2}$/.test(cf[id].loc || ""));
   if (!seen.length) R.ai = none;
   else {
-    const bad = seen.filter(id => AI_BLOCKED.includes(cf[id].loc));
+    const bad = seen.filter(id => AI_BLOCKED.has(cf[id].loc));
     const x = majority(ids("ai"), of), e = x && byL[x];
     R.ai = bad.length ? { s: "bad", k: "bad", v: { list: bad, c: cf[bad[0]].loc } }
       : { s: "ok", k: "ok", v: { x, c: cf[seen[0]].loc, dc: !!(e && e.dc) } };
   }
-  // WebRTC: UDP sees the local line while websites abroad (most of them) go through a proxy. A site routed direct
-  // seeing the local line too doesn't make it safe: any page, proxied or not, can read what STUN saw.
+  // WebRTC: UDP sees the direct line while websites abroad (most of them) go through a proxy. A site routed direct
+  // seeing the direct line too doesn't make it safe: any page, proxied or not, can read what STUN saw.
   const udp = probes.filter(p => p.read === "stun" && of[p.id]).map(p => p.id), udpL = [...new Set(udp.flatMap(id => of[id]))];
-  const leaked = udpL.filter(l => byL[l].kind === "local");
-  const proxied = byL[abroad].kind !== "local";
+  const leaked = udpL.filter(l => byL[l].kind === "direct"), pxUdp = udpL.filter(l => byL[l].kind === "proxy");
   R.rtc = !udp.length ? { s: "ok", k: "none", v: {} }
-    : leaked.length && proxied ? { s: "bad", k: "leak", v: { a: leaked[0] } }
-    : { s: "ok", k: proxied && udpL.every(l => byL[l].kind !== "local") ? "proxy" : "same", v: { a: udpL[0] } };
+    : leaked.length && byL[abroad].kind === "proxy" ? { s: "bad", k: "leak", v: { a: leaked[0] } }
+    : pxUdp.length === udpL.length ? { s: "ok", k: "proxy", v: { a: pxUdp[0] } }
+    : leaked.length ? { s: "ok", k: "same", v: { a: leaked[0] } }
+    : { s: "info", k: "unknown", v: { a: udpL[0] } };
   // Ports and protocols: one server (1ms.dog's own) over TCP and UDP on several ports. The exit most of each saw, and
   // any port on another exit than the rest of its protocol.
   const own = probes.filter(p => p.g === "own"), oTcp = own.filter(p => p.read !== "stun"), oUdp = own.filter(p => p.read === "stun");
@@ -167,16 +197,16 @@ export function findings(probes, exits, cf, tzCc, nat) {
     : !udpO ? { s: "info", k: "noudp", v: { a: tcp, ...pv } }
     : !tcp ? { s: "info", k: "udp", v: { b: udpO, ...pv } }
     : tcp === udpO ? { s: pi, k: "same", v: { a: tcp, ...pv } }
-    : byL[udpO].kind === "local" && byL[tcp].kind !== "local" ? { s: "warn", k: "tcponly", v: { a: tcp, b: udpO, ...pv } }
+    : byL[udpO].kind === "direct" && byL[tcp].kind === "proxy" ? { s: "warn", k: "tcponly", v: { a: tcp, b: udpO, ...pv } }
     : { s: "info", k: "split", v: { a: tcp, b: udpO, ...pv } };
   // NAT type (natOf). STUN sees the UDP exit, so behind a proxy (a TUN-mode client too) it is the proxy's NAT.
   R.nat = !nat ? none : nat.k === "none" ? { s: "info", k: "none", v: {} }
     : { s: nat.k === "cone" ? "ok" : "warn", k: nat.k, v: { ...(nat.multi && { multi: true }), ...(udpL.some(l => byL[l].kind === "proxy") && { px: true }) } };
-  // IPv6: the IPv6-only hosts see the local line while IPv4 goes through a proxy
+  // IPv6: the IPv6-only hosts see the direct line while IPv4 goes through a proxy
   const v4 = majority(probes.filter(p => p.g === "stack" && p.fam === 4).map(p => p.id), of);
   const v6 = majority(probes.filter(p => p.g === "stack" && p.fam === 6).map(p => p.id), of);
   R.v6 = !v6 && !exits.some(e => e.v6) ? { s: "info", k: "none", v: {} }
-    : v6 && v4 && v6 !== v4 && byL[v6].kind === "local" && byL[v4].kind !== "local" ? { s: "bad", k: "leak", v: { a: v6 } }
+    : v6 && v4 && v6 !== v4 && byL[v6].kind === "direct" && byL[v4].kind === "proxy" ? { s: "bad", k: "leak", v: { a: v6 } }
     : { s: "ok", k: "ok", v: { a: v6 || exits.find(e => e.v6).letter } };
   // time zone against the country sites abroad see (mainland China and Hong Kong/Macau count as one here)
   const cc = byL[abroad].cc;
@@ -187,7 +217,7 @@ export function findings(probes, exits, cf, tzCc, nat) {
 }
 // Probe rows that stand out, by probe id: { k: "odd", x, y } a probe on another exit (x) than most of its kind (y:
 // mainland sites against mainland sites, everything else against sites abroad), or { k: "leak", x } a STUN server
-// that sees the local line while websites abroad see a proxy.
+// that sees the direct line while websites abroad see a proxy.
 export function oddProbes(probes, exits) {
   const of = exitOfProbe(exits), byL = Object.fromEntries(exits.map(e => [e.letter, e])), out = {};
   const ids = g => probes.filter(p => p.g === g).map(p => p.id);
@@ -196,8 +226,8 @@ export function oddProbes(probes, exits) {
   for (const p of probes) {
     const l = of[p.id]; if (!l) continue;
     if (p.read === "stun") {
-      const loc = l.find(x => byL[x].kind === "local");
-      if (loc && byL[abroad].kind !== "local") out[p.id] = { k: "leak", x: loc };
+      const loc = l.find(x => byL[x].kind === "direct");
+      if (loc && byL[abroad].kind === "proxy") out[p.id] = { k: "leak", x: loc };
       continue;
     }
     const want = p.g === "cn" ? cn : abroad;
@@ -227,21 +257,23 @@ export function natOf(cands, seen, exits) {
 /* ---------- share links ---------- */
 // The headline of a result, for the share image and the link's preview card: "leak" (WebRTC or IPv6 skips the proxy),
 // "ai" (AI services see a region they don't serve), "split" (sites use different exits), "proxy" (everything through
-// one proxy) or "direct" (everything on the local line). null before there is a result.
-export const VERDICTS = ["leak", "ai", "split", "proxy", "direct"];
+// one proxy), "direct" (everything on the direct line) or "unknown" (the exits' owners could not be looked up).
+// The order is the contract's (docs/egress-contract.md §2). null before there is a result.
+export const VERDICTS = ["leak", "ai", "split", "proxy", "direct", "unknown"];
 export function verdictOf(finds, exits) {
   if (!finds || !finds.route || finds.route.s === "none") return null;
   if (finds.rtc.s === "bad" || finds.v6.s === "bad") return "leak";
   if (finds.ai.s === "bad") return "ai";
   if (finds.route.k === "split" || finds.except.k === "some") return "split";
   const e = exits.find(x => x.letter === finds.route.v.a);
-  return e && e.kind === "proxy" ? "proxy" : "direct";
+  return !e || e.kind === "unknown" ? "unknown" : e.kind === "proxy" ? "proxy" : "direct";
 }
 // A result in a link, without any IP address: per exit its country, city, network and flags; per probe the exits it
 // saw (or why it failed), its time and the Cloudflare colo and country it reported. The receiver works the findings
 // out again from these, so a shared result reads exactly like the sender's. Version 1:
 // #r=1|<unix time base36>|<time-zone country>|<exits>|<probes>[|<nat>]
-//   exits:  cc~city~org~asn~flags joined by ","  (flags: d datacenter, w WARP, 4 / 6 has IPv4 / IPv6)
+//   exits:  cc~city~org~asn~flags joined by ","  (flags: d datacenter or VPN, w WARP, i direct, p proxy, u can't
+//           tell, 4 / 6 has IPv4 / IPv6; a link made before kinds has no i/p/u and is read from d/w)
 //   probes: id:<seen>:<ms base36>:<colo>:<loc> joined by ",", where <seen> is the exits' indexes joined by ".", or
 //           "x" and why it failed (t timeout, h<status> http, n net, p parse, s stun)
 //   nat:    "n", then c cone, s symmetric or u can't tell, then m when one exit has several addresses (absent in links
@@ -250,9 +282,10 @@ const enc = v => encodeURIComponent(String(v ?? "")).replace(/[~,|:.]/g, c => "%
 const WHY = { timeout: "t", http: "h", net: "n", parse: "p", stun: "s" }, WHY_OF = Object.fromEntries(Object.entries(WHY).map(([k, v]) => [v, k]));
 // rows: probe id → { l: exit labels, ms, cf: { colo, loc } } or { why: { why, n } }; place: include city and network
 const NAT = { cone: "c", sym: "s", none: "u" }, NAT_OF = Object.fromEntries(Object.entries(NAT).map(([k, v]) => [v, k]));
+const KIND = { direct: "i", proxy: "p", unknown: "u" }, KIND_OF = Object.fromEntries(Object.entries(KIND).map(([k, v]) => [v, k]));
 export function encodeShare({ ts, tz, exits, rows, place, nat }) {
   const ex = exits.map(e => [e.cc, place ? e.city : "", place ? e.org : "", place && e.asn || "",
-    (e.dc ? "d" : "") + (e.warp ? "w" : "") + (e.v4 ? "4" : "") + (e.v6 ? "6" : "")].map(enc).join("~")).join(",");
+    (e.dc ? "d" : "") + (e.warp ? "w" : "") + (KIND[e.kind] || "") + (e.v4 ? "4" : "") + (e.v6 ? "6" : "")].map(enc).join("~")).join(",");
   const at = Object.fromEntries(exits.map((e, i) => [e.letter, i]));
   const rs = Object.entries(rows).map(([id, r]) => {
     const w = r.why || {}, cf = r.cf || {};
@@ -270,8 +303,9 @@ export function parseShare(h, ids) {
   const dec = v => { try { return decodeURIComponent(v); } catch (e) { return ""; } };
   const exits = m[3] ? m[3].split(",").map((x, i) => {
     const [cc = "", city = "", org = "", asn = "", f = ""] = x.split("~").map(dec);
+    const kind = KIND_OF[["i", "p", "u"].find(k => f.includes(k))] || "";
     return { key: "s" + i, ips: [], probes: [], cc: /^[A-Z]{2}$/.test(cc) ? cc : "", city: city.slice(0, 80), org: org.slice(0, 120), asn: +asn || null,
-      dc: f.includes("d"), warp: f.includes("w"), v4: f.includes("4"), v6: f.includes("6") };
+      dc: f.includes("d"), warp: f.includes("w"), ...(kind ? { kind } : {}), v4: f.includes("4"), v6: f.includes("6") };
   }) : [];
   const rows = {};
   for (const p of m[4].split(",")) {

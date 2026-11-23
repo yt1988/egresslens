@@ -10,11 +10,20 @@ asks about 60 destinations at once and groups the addresses they report into exi
 
 - **One exit per network**, keyed by ASN when a lookup knows it, else by the address prefix (/16 for IPv4, /64 for
   IPv6). An ISP's IPv4 and IPv6 addresses are then one exit, not two.
-- **Local (D) or proxy (P)** comes from the network's owner: a cloud or hosting company (a regex over the org name,
-  `DC_RE` in `src/lib.mjs`) or Cloudflare WARP is a proxy; anything else is the visitor's own line. A residential
-  proxy, or a VPN on an ISP's network, can't be told apart this way, and the FAQ says so.
-- **The reference exit** for "abroad" is the majority of IP lookup services, AI services and popular sites, not any
-  single probe; mainland sites have their own majority. A probe on another exit than its kind is an exception.
+- **Direct (D), proxy (P) or can't tell (?)** comes from the network's owner: a cloud or hosting company, a VPN brand
+  (regexes over the org name), an ASN on the data-centre list, or Cloudflare WARP is a proxy; a network whose owner no
+  lookup knows is unknown, never read as direct. A residential proxy, or a VPN on an ISP's network, can't be told
+  apart this way, and the FAQ says so. The rules — with the data-centre, VPN, time-zone and AI-region tables — live in
+  the site-wide core `src/egress.js` (vendored from 1ms.dog, copied verbatim; `docs/egress-contract.md` there has
+  them). Do not add a regex here: change the core, then re-copy it.
+- **An anchor says which route, not what kind.** Two probes sit at destinations no split-tunnel list names, one in
+  mainland China (`probe.dog.1msapp.com:9443/conn`) and one in Tokyo (`probe.1ms.dog/conn`). What they see is the route
+  the visitor's rules did not choose, so the two of them tell a split route from a single one, and each exit keeps
+  which anchor it follows (`path`). A proxy's exit follows an anchor too, so a matching anchor never makes an exit
+  direct: the kind is who owns it.
+- **The reference exit** for "abroad" is the abroad anchor; when it did not answer, the majority of IP lookup
+  services, AI services and popular sites. Mainland sites have the same pair (their anchor, else their majority). A
+  probe on another exit than its kind is an exception.
 
 ## What each kind of probe reads
 

@@ -115,6 +115,10 @@
   /* ---------- state and rendering ---------- */
   // shared: a result from a link being shown (no addresses; nothing is tested until the visitor asks)
   const S = { res: {}, ok: {}, ms: {}, why: {}, geo: {}, warp: "off", exits: [], finds: [], odd: {}, nat: null, done: false, gen: 0, shared: null };
+  // The two route anchors' addresses (src/probes.mjs, anchor: "cn" | "intl"): an exit's path is which of them it
+  // follows, and the routing row compares the two. Empty until each anchor answers.
+  const anchorsOf = () => Object.fromEntries(PROBES.filter(p => p.anchor)
+    .map(p => [p.anchor, ((S.res[p.id] || [])[0] || {}).ip]).filter(([, ip]) => ip));
   const masked = () => store.get(K.mask) === "1";
   const ipTxt = ip => masked() ? maskIp(ip) : ip;
   const eye = $("#eye");
@@ -145,7 +149,7 @@
     const cf = res[0] && res[0].cf;
     if (cf && cf.colo) co.textContent = cf.colo;
   }
-  const kindOf = l => (S.exits.find(e => e.letter === l) || {}).kind || "proxy";
+  const kindOf = l => (S.exits.find(e => e.letter === l) || {}).kind || "unknown";
   // each numbered exit has its own shade: D1/D2 greens, P1…P4 orange, violet, pink, red
   const chip = (l, big) => `<i class="lt k-${kindOf(l)} n${(/\d+$/.exec(l) || [1])[0]}${big ? " big" : ""}">${esc(l)}</i>`;
   function renderChips() {
@@ -260,7 +264,7 @@
         // the country the AI site itself sees (its Cloudflare trace), and the exit that took the request
         const cf = (S.res[id][0] || {}).cf || {};
         // the region list is OpenAI's and Anthropic's, so only their sites are marked
-        bad = ["chatgpt", "openai", "sora", "claude", "anthropic"].includes(id) && AI_BLOCKED.includes(cf.loc);
+        bad = ["chatgpt", "openai", "sora", "claude", "anthropic"].includes(id) && AI_BLOCKED.has(cf.loc);
         x.innerHTML = (of[id] || []).map(l => chip(l)).join("") + place(cf.loc);
         m.textContent = cf.colo || "";
       } else {
@@ -328,7 +332,7 @@
       headline: S.exits.length ? t("vh_" + verdict()) : t("no_net"), stats,
       findings: CHECKS.filter(r => F[r] && F[r].s in rank).sort((a, b) => rank[F[a].s] - rank[F[b].s]).slice(0, 4).map(r => ({ level: F[r].s, text: text(r) })),
       facts: {
-        exits: S.exits.map(e => ({ country: e.cc || null, isp: e.org || null, via: e.kind === "local" ? "direct" : "proxy" })),
+        exits: S.exits.map(e => ({ country: e.cc || null, isp: e.org || null, via: e.kind })),
         leak: F.rtc.s === "bad" || F.v6.s === "bad", split: F.route.k === "split",
         ...(ai && { aiCountry: ai }), ...(nat && { nat: nat === "sym" ? "symmetric" : "cone" }),
       },
@@ -342,7 +346,7 @@
   let raf = 0;
   const live = () => { if (raf) return; raf = requestAnimationFrame(() => {
     raf = 0; if (S.done) return;
-    S.exits = groupExits(seenAll().filter(s => geoOf(S.geo, s.ip)), S.geo, GROUP_OF, S.warp);
+    S.exits = groupExits(seenAll().filter(s => geoOf(S.geo, s.ip)), S.geo, GROUP_OF, S.warp, anchorsOf());
     renderExits(); renderChips(); renderFocus();
   }); };
   // A landing page tests only what it is about: its own probes, and the mainland and abroad baselines that tell the
@@ -393,7 +397,7 @@
     for (const { ip } of seenAll()) lookup(ip);
     await Promise.allSettled(lookups);
     if (gen !== S.gen) return;
-    S.exits = groupExits(seenAll(), S.geo, GROUP_OF, S.warp);
+    S.exits = groupExits(seenAll(), S.geo, GROUP_OF, S.warp, anchorsOf());
     const cf = Object.fromEntries(PROBES.map(p => [p.id, ((S.res[p.id] || [])[0] || {}).cf]).filter(([, c]) => c));
     const seen = Object.fromEntries(PROBES.filter(isStun).map(p => [p.id, (S.res[p.id] || []).map(r => r.ip)]));
     S.nat = natOf(await natP, seen, S.exits);
@@ -505,7 +509,7 @@
     // the exits side by side: chip, flag, place, then kind (and network when shown), wrapping as needed
     const items = S.exits.map(e => {
       const where = (kit.show ? [e.city, e.cc && country(e.cc)] : [e.cc ? country(e.cc) : ""]).filter(Boolean).join(", ") || "?";
-      const sub = t(e.kind === "local" ? "k_local" : "k_proxy") + (kit.show && e.org ? " · " + e.org : "");
+      const sub = t("k_" + e.kind) + (kit.show && e.org ? " · " + e.org : "");
       m.font = `600 26px ${F}`; const ww = m.measureText(where).width;
       m.font = `400 22px ${F}`; const sw = Math.min(m.measureText(sub).width, 380);
       return { e, where, sub, sw, w: chipW(m, kit, e.letter, 40) + 12 + (e.cc ? 42 : 0) + ww + 12 + sw };
@@ -541,7 +545,7 @@
     const C = { line: v("line"), fg: v("fg"), muted: v("muted"), ok: v("ok"), bad: v("bad"), warn: v("e-p1") };
     const colorOf = l => {
       const e = S.exits.find(x => x.letter === l), n = +((/\d+$/.exec(l) || [1])[0]);
-      return !e ? C.muted : e.kind === "local" ? v(n === 2 ? "e-d2" : "e-d") : v("e-p" + (n >= 2 && n <= 4 ? n : 1));
+      return !e || e.kind === "unknown" ? C.muted : e.kind === "direct" ? v(n === 2 ? "e-d2" : "e-d") : v("e-p" + (n >= 2 && n <= 4 ? n : 1));
     };
     const v0 = verdict();
     x.textBaseline = "alphabetic";
@@ -637,7 +641,7 @@
     // each exit and how it was told apart: masked addresses, the checkpoints that saw it (the grouping's evidence),
     // the data-center/WARP flags that make the D/P label, IPv4/IPv6, and the MSS hint of a tunnel
     const exits = S.exits.map(e => ({
-      l: e.letter, k: e.kind, cc: e.cc || null, ips: e.ips.map(maskIp), probes: e.probes,
+      l: e.letter, k: e.kind, cc: e.cc || null, ips: e.ips.map(maskIp), probes: e.probes, ...(e.path && e.path !== "unknown-path" ? { path: e.path } : {}),
       ...(e.dc ? { dc: 1 } : {}), ...(e.warp ? { warp: 1 } : {}), ...(e.v4 ? { v4: 1 } : {}), ...(e.v6 ? { v6: 1 } : {}),
       ...(tunOf(e) ? { tun: tunOf(e) } : {}),
     }));
@@ -658,7 +662,7 @@
     // what a visitor most often says is wrong, as "what it read" one-tap answers: each exit, the routing row, then
     // every check that did not come out clean (leak, exceptions, ports, NAT, time zone…)
     const picks = [];
-    for (const e of S.exits) picks.push(rpPick(`${e.letter}${t("colon")}${[e.cc ? country(e.cc) : "?", t(e.kind === "local" ? "k_local" : "k_proxy")].join(" · ")}`));
+    for (const e of S.exits) picks.push(rpPick(`${e.letter}${t("colon")}${[e.cc ? country(e.cc) : "?", t("k_" + e.kind)].join(" · ")}`));
     for (const r of CHECKS) {
       const f = S.finds[r];
       if (f && f.s !== "none" && (r === "route" || f.s !== "ok")) picks.push(rpPick(rpLabel(r) + t("colon") + rpValue(r)));

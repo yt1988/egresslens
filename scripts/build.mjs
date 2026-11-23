@@ -60,12 +60,25 @@ export async function build({ check = false } = {}) {
   const langs = LANGS.filter(([l]) => I[l]);
   const tpl = await readFile(new URL("page.html", src), "utf8");
 
+  // src/egress.js is the site's shared exit core (vendored from 1ms.dog/src/egress.js): lib.mjs imports it by name for
+  // the tests, and the bundle gets the same file inlined, with the imported names aliased (the test import is dropped),
+  // so rules and page cannot drift apart.
+  const core = (await readFile(new URL("egress.js", src), "utf8")).replace(/^export /gm, "");
+  const libRaw = await readFile(new URL("lib.mjs", src), "utf8");
+  const imp = /^import \{([^}]*)\} from "\.\/egress\.js";$/m.exec(libRaw);
+  if (!imp) throw new Error('src/lib.mjs must import the shared core from "./egress.js"');
+  const alias = imp[1].split(",").map(s => s.trim()).map(s => {
+    const [name, as = name] = s.split(/\s+as\s+/);
+    if (as === name) throw new Error(`src/lib.mjs: import { ${name} } needs an alias (as core…) for the inlined build`);
+    return `${as} = ${name}`;
+  }).join(", ");
   // src/lib.mjs (the pure logic the tests import) goes inside the app's scope, at its /* @lib */ marker
-  const lib = (await readFile(new URL("lib.mjs", src), "utf8")).replace(/^export /gm, "");
+  const lib = libRaw.replace(imp[0], "").replace(/^export /gm, "");
   const appSrc = await readFile(new URL("app.js", src), "utf8");
   if (!appSrc.includes("/* @lib */")) throw new Error("src/app.js has no /* @lib */ marker");
-  const probes = PROBES.map(({ id, g, name, host, url, read, fam, self }) => ({ id, g, name, host, url, read, ...(fam ? { fam } : {}), ...(self ? { self } : {}) }));
-  const appFull = `const PROBES = ${JSON.stringify(probes)}, GROUPS = ${JSON.stringify(GROUPS)};\n` + appSrc.replace("/* @lib */", () => lib);
+  const probes = PROBES.map(({ id, g, name, host, url, read, fam, self, anchor }) => ({ id, g, name, host, url, read, ...(fam ? { fam } : {}), ...(self ? { self } : {}), ...(anchor ? { anchor } : {}) }));
+  const appFull = `const PROBES = ${JSON.stringify(probes)}, GROUPS = ${JSON.stringify(GROUPS)};\n` + core + `\nconst ${alias};\n`
+    + appSrc.replace("/* @lib */", () => lib);
   new Function(appFull);                                                // must parse
   const cssFull = (await Promise.all(["fonts.css", "base.css", "style.css"].map(f => readFile(new URL(f, src), "utf8")))).join("\n");
   // minified with esbuild (pinned version, so the output, and its hash, only changes when the source does)

@@ -8,12 +8,17 @@
 // url   what the browser fetches; for read "stun" a STUN server
 // read  how to read the answer (READERS in src/lib.mjs)
 // fam   4 or 6 when the host only has that IP version
+// anchor "cn" or "intl": this probe is one of the two route anchors (see below)
 // self  this page's own host: the 1ms.dog shell's /_ms/me (Cloudflare's view of this connection: the fastest answer,
 //       and no third party), or this host's /cdn-cgi/trace where there is no shell. Its name and host come from the
 //       page (string self_name, the site's address).
 
 // group id → whether its probes stand for "abroad" when the page compares routes
 export const GROUPS = ["cn", "intl", "ai", "web", "stack", "udp", "own"];
+// The two anchors (1ms.dog's shared exit rules, docs/egress-contract.md §1): one destination in mainland China and one
+// abroad, neither in any split-tunnel list, on 1ms.dog's own machines. What they see is the route no rule should have
+// changed, which is what tells a split route from an only-one-route; the kind (direct or proxy) still comes from who
+// owns the exit. `anchor: "cn" | "intl"` marks them.
 
 const trace = (id, g, name, host) => ({ id, g, name, host, url: `https://${host}/cdn-cgi/trace`, read: "trace" });
 
@@ -24,9 +29,13 @@ export const PROBES = [
   { id: "ipifycn", g: "cn", name: "ipify.cn", host: "api.ipify.cn", url: "https://api.ipify.cn", read: "text" },
   { id: "dnspod4", g: "cn", name: "DNSPod", host: "ipv4.ddnspod.com", url: "https://ipv4.ddnspod.com", read: "text", fam: 4 },
   { id: "dnspod6", g: "cn", name: "DNSPod", host: "ipv6.ddnspod.com", url: "https://ipv6.ddnspod.com", read: "text", fam: 6 },
+  // the route anchor in mainland China
+  { id: "acn", g: "cn", name: "1ms.dog", host: "probe.dog.1msapp.com", url: "https://probe.dog.1msapp.com:9443/conn", read: "conn", anchor: "cn" },
 
   // IP lookup services abroad, this site first
   { id: "self", g: "intl", name: "", host: "", url: "/_ms/me", read: "me", self: 1 },
+  // the route anchor abroad: the same probe binary as the one in China
+  { id: "aintl", g: "intl", name: "1ms.dog", host: "probe.1ms.dog", url: "https://probe.1ms.dog/conn", read: "conn", anchor: "intl" },
   { id: "ipsb", g: "intl", name: "IP.SB", host: "api.ip.sb", url: "https://api.ip.sb/geoip", read: "ipsb" },
   { id: "ipinfo", g: "intl", name: "ipinfo.io", host: "ipinfo.io", url: "https://ipinfo.io/json", read: "ipinfo" },
   { id: "ipapico", g: "intl", name: "ipapi.co", host: "ipapi.co", url: "https://ipapi.co/json/", read: "ipapico" },
