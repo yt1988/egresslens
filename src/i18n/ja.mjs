@@ -46,7 +46,7 @@ export default {
   v_port_noudp: "TCP は {a} 経由。UDP は通りません（遮断されているか、ブラウザで WebRTC がオフ）",
   v_port_udp: "UDP だけが {b} 経由で通り、TCP はどのポートも接続できません",
   ex_tun: "トンネル経由の可能性（MSS {n}）",
-  ex_seen: "検出したサイト",
+  ex_seen: "検出したチェック先",
   ex_relay: "iCloud プライベートリレー：この出口と位置は Apple が選んだ代替の場所で、自分の回線ではありません。",
   hide: "IP を隠す",
   show: "IP を表示",

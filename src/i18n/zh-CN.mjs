@@ -46,7 +46,7 @@ export default {
   v_port_noudp: "TCP 走 {a}；UDP 不通（被拦了，或者浏览器关掉了 WebRTC）",
   v_port_udp: "只有 UDP 通，走 {b}；TCP 各端口都连不上",
   ex_tun: "可能经过隧道（MSS {n}）",
-  ex_seen: "看到它的站点",
+  ex_seen: "看到它的检测点",
   ex_relay: "iCloud 专用代理：这个出口和这个位置是 Apple 替你选的替代位置，不是你的实际线路。",
   hide: "隐藏 IP",
   show: "显示 IP",
