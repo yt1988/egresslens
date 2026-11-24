@@ -6,9 +6,9 @@ ports, so a different exit can only come from the visitor's proxy rules. Ports, 
 
 | | |
 |---|---|
-| STUN (RFC 5389 Binding) | `stun.1ms.dog`, UDP 3478, 19302, 51820, 40000, IPv4 and IPv6 |
-| HTTPS echo | `echo.1ms.dog`, TCP 4433, 8080, 8443, 9443, 10443: `GET /` → `{"ip","port","proto"}`, any origin |
-| WebSocket | `wss://echo.1ms.dog:8443/ws`: greets `{"v":1,"pop":"NRT"}`, then echoes text frames (64 bytes at most, 60 messages or 30 s), origins `https://1ms.dog`, `https://*.1ms.dog` and localhost; the 1ms.dog home page times round trips with it |
+| STUN (RFC 5389 Binding) | `<stun-domain>`, UDP 3478, 19302, 51820, 40000, IPv4 and IPv6 |
+| HTTPS echo | `<echo-domain>`, TCP 4433, 8080, 8443, 9443, 10443: `GET /` → `{"ip","port","proto"}`, any origin |
+| WebSocket | `wss://<echo-domain>:8443/ws`: greets `{"v":1,"pop":"NRT"}`, then echoes text frames (64 bytes at most, 60 messages or 30 s), origins `https://1ms.dog`, `https://*.1ms.dog` and localhost; the 1ms.dog home page times round trips with it |
 
 Nothing is logged or stored; errors only. Without a certificate the HTTPS ports stay off and STUN still runs.
 

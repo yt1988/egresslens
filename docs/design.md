@@ -76,6 +76,10 @@ every UDP port went direct, which no other probe could have shown.
   port; 4433–10443 for TCP. 53 and 443 are left alone: a DNS server and other probes may want them.
 - The new STUN ports count for the WebRTC leak and the NAT type too: same IP on another port is the cleanest test of a
   port-dependent mapping.
+- **A mainland server is not a domestic speed test.** If this site's own machine in mainland China is added as a port
+  group, every visitor's path to it is the one measured: a visitor abroad crosses a border to reach it, and even one in
+  another province takes that province's route. The group and its row describe that route — its ports, its exit —
+  never "domestic speed" or how fast the site is from mainland China.
 
 ## The tunnel hint from the MSS
 

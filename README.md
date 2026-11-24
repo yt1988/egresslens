@@ -28,7 +28,7 @@ Which IP addresses does the internet see you as? Rule-based proxies and VPNs pic
 | Popular sites | Cloudflare, 1.1.1.1, GitLab, npm, Notion, Linear, Zoom, Medium, Coinbase, Crunchyroll, Patreon, Shopify |
 | IPv4 only / IPv6 only | IP.SB, Cloudflare Radar, ipify, icanhazip on single-stack hosts |
 | WebRTC (UDP) | STUN servers of Cloudflare, Google, Twilio, Xiaomi, Bilibili and Mango TV |
-| 1ms.dog's Tokyo server | one destination over TCP 443 (who.1ms.dog's probe, which also reads the MSS; it is the anchor for the route abroad), 4433, 8080, 8443, 9443, 10443 (HTTPS echo, `echo.1ms.dog`) and UDP 3478, 19302, 51820, 40000 (STUN, `stun.1ms.dog`): an exit that changes with the port or protocol alone comes from the proxy's rules. The server is [`server/`](server/) |
+| 1ms.dog's Tokyo server | one destination over TCP 443 (a probe that also reads the MSS; it is the anchor for the route abroad), 4433, 8080, 8443, 9443, 10443 (HTTPS echo) and UDP 3478, 19302, 51820, 40000 (STUN): an exit that changes with the port or protocol alone comes from the proxy's rules. The server is [`server/`](server/) |
 
 AI services and popular sites are read through Cloudflare's `/cdn-cgi/trace` on each site's own domain: it returns the address that connected, with `Access-Control-Allow-Origin: *`. So the page sees exactly which exit chatgpt.com or claude.ai gets under your rules.
 

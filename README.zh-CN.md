@@ -28,7 +28,7 @@
 | 常用网站 | Cloudflare、1.1.1.1、GitLab、npm、Notion、Linear、Zoom、Medium、Coinbase、Crunchyroll、Patreon、Shopify |
 | 仅 IPv4 / 仅 IPv6 | 单栈站点上的 IP.SB、Cloudflare Radar、ipify、icanhazip |
 | WebRTC（UDP） | Cloudflare、Google、Twilio、小米、哔哩哔哩、芒果 TV 的 STUN 服务器 |
-| 本站东京服务器 | 同一个目的地：TCP 443（who.1ms.dog 的探针，同时读出 MSS，也是境外的锚点）、4433、8080、8443、9443、10443（HTTPS 回声，`echo.1ms.dog`），以及 UDP 3478、19302、51820、40000（STUN，`stun.1ms.dog`）。只换端口或协议出口就变了，说明是代理规则在起作用。服务端见 [`server/`](server/) |
+| 本站东京服务器 | 同一个目的地：TCP 443（一个同时读出 MSS 的探针，也是境外的锚点）、4433、8080、8443、9443、10443（HTTPS 回声），以及 UDP 3478、19302、51820、40000（STUN）。只换端口或协议出口就变了，说明是代理规则在起作用。服务端见 [`server/`](server/) |
 
 AI 服务和常用网站读取的是各站点自己域名上的 Cloudflare `/cdn-cgi/trace`：它返回连接过来的地址，并带 `Access-Control-Allow-Origin: *`。所以页面能看到在你的规则下，chatgpt.com、claude.ai 实际看到的是哪个出口。
 
