@@ -82,6 +82,8 @@ export default {
   g_stack: "IPv4 전용 / IPv6 전용 사이트",
   g_udp: "WebRTC (UDP)",
   g_own: "이 사이트의 도쿄 서버: TCP·UDP 포트별",
+  g_owncn: "이 사이트의 중국 본토 서버: TCP·UDP 포트별",
+  g_owncn_note: "모든 방문자가 국경을 넘어 이 서버에 도달하므로 보이는 것은 국경 구간이며, 중국 내 속도가 아닙니다. 응답이 없는 포트는 그냥 연결되지 않는 것입니다.",
 
 
   faq_h: "자주 묻는 질문",

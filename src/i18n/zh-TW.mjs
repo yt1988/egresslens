@@ -82,6 +82,8 @@ export default {
   g_stack: "僅 IPv4 / 僅 IPv6 網站",
   g_udp: "WebRTC（UDP）",
   g_own: "本站東京伺服器：TCP / UDP 各連接埠",
+  g_owncn: "本站國內伺服器：TCP / UDP 各連接埠",
+  g_owncn_note: "每個訪客到這台機器都要跨境，所以看的是跨境段，不代表國內使用者的速度；連接埠沒有回應只表示連不上。",
 
 
   faq_h: "常見問題",

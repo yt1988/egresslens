@@ -14,8 +14,16 @@
 //       and no third party), or this host's /cdn-cgi/trace where there is no shell. Its name and host come from the
 //       page (string self_name, the site's address).
 
+// This site's own server in mainland China, by port and protocol, like the Tokyo one. The machine is being set up
+// (2026-11-24): flip this on once every port answers from outside, so a visitor never sees rows for ports that are not
+// there yet. The hostname is never shown on the page, like the rest of this site's own probes.
+const CN_PORTS_READY = false;
+const CN_HOST = "echo.dog.1msapp.com";
+const CN_PORTS = [...[4433, 8080, 8443, 10443, 2053].map(n => ({ id: "cnt" + n, g: "owncn", name: "CN TCP " + n, host: CN_HOST, url: `https://${CN_HOST}:${n}/`, read: "echo" })),
+  ...[3478, 19302, 51820, 40000].map(n => ({ id: "cnu" + n, g: "owncn", name: "CN UDP " + n, host: CN_HOST, url: `stun:${CN_HOST}:${n}`, read: "stun" }))];
+
 // group id → whether its probes stand for "abroad" when the page compares routes
-export const GROUPS = ["cn", "intl", "ai", "web", "stack", "udp", "own"];
+export const GROUPS = ["cn", "intl", "ai", "web", "stack", "udp", "own", ...(CN_PORTS_READY ? ["owncn"] : [])];
 // The two anchors (1ms.dog's shared exit rules, docs/egress-contract.md §1): one destination in mainland China and one
 // abroad, neither in any split-tunnel list, on this site's own machines. What they see is the route no rule should
 // have changed, which is what tells a split route from an only-one-route; the kind (direct or proxy) still comes from
@@ -101,4 +109,7 @@ export const PROBES = [
   { id: "t443", g: "own", name: "TCP 443", host: "probe.1ms.dog", url: "https://probe.1ms.dog/conn", read: "conn", anchor: "intl" },
   ...[4433, 8080, 8443, 9443, 10443].map(n => ({ id: "t" + n, g: "own", name: "TCP " + n, host: "echo.1ms.dog", url: `https://echo.1ms.dog:${n}/`, read: "echo" })),
   ...[3478, 19302, 51820, 40000].map(n => ({ id: "u" + n, g: "own", name: "UDP " + n, host: "stun.1ms.dog", url: `stun:stun.1ms.dog:${n}`, read: "stun" })),
+
+  // this site's server in mainland China: the cross-border leg to it, not a test of domestic speed (see the group note)
+  ...(CN_PORTS_READY ? CN_PORTS : []),
 ];

@@ -103,6 +103,8 @@ ul { list-style: none; margin: 0; padding: 0; }
 .pgroups { columns: 2 420px; column-gap: 28px; }
 .pg { break-inside: avoid; margin-bottom: 14px; }
 .pg h3 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; height: 20px; display: flex; align-items: center; }
+/* a group whose readings mean something else than a local test (the mainland server: the cross-border leg) */
+.pg-note { font-size: 12px; color: var(--muted); margin: 2px 0 6px; }
 .pg-n { margin-left: auto; font: 500 12px var(--f-num); letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .pr { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 13fr) 76px 34px 52px; align-items: center; gap: 8px; height: 34px; border-top: 1px solid var(--line); font-size: 13px; }
 .pn { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

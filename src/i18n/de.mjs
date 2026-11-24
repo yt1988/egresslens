@@ -82,6 +82,8 @@ export default {
   g_stack: "Nur-IPv4- / Nur-IPv6-Websites",
   g_udp: "WebRTC (UDP)",
   g_own: "Server dieser Seite in Tokio: TCP- und UDP-Ports",
+  g_owncn: "Server dieser Seite in Festlandchina: TCP- und UDP-Ports",
+  g_owncn_note: "Jeder Besucher überquert eine Grenze zu dieser Maschine: Das sind Werte der grenzüberschreitenden Strecke, nicht die Geschwindigkeit in China; ein Port ohne Antwort ist einfach nicht erreichbar.",
 
 
   faq_h: "Häufige Fragen",

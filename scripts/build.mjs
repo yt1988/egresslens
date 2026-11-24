@@ -82,7 +82,7 @@ export async function build({ check = false } = {}) {
   if (!appSrc.includes("/* @lib */")) throw new Error("src/app.js has no /* @lib */ marker");
   const probes = PROBES.map(({ id, g, name, nameKey, host, url, read, fam, self, anchor }) => ({ id, g, name, host, url, read, ...(nameKey ? { nameKey } : {}), ...(fam ? { fam } : {}), ...(self ? { self } : {}), ...(anchor ? { anchor } : {}) }));
   // this site's own probes are shown by their role, never by their hostname: a rule list must not learn the anchors
-  const ownProbe = p => !!(p.self || p.anchor || p.g === "own");
+  const ownProbe = p => !!(p.self || p.anchor || p.g === "own" || p.g === "owncn");
   const appFull = `const PROBES = ${JSON.stringify(probes)}, GROUPS = ${JSON.stringify(GROUPS)};\n` + inline.join("\n") + `\nconst ${aliases.join(", ")};\n`
     + appSrc.replace("/* @lib */", () => lib);
   new Function(appFull);                                                // must parse
@@ -112,8 +112,11 @@ export async function build({ check = false } = {}) {
     const row = p => `<li class="pr" id="p-${p.id}"><span class="pn"${ownProbe(p) ? "" : ` title="${esc(hostOf(p))}"`}>${esc(nameOf(p))}${p.fam ? ` <span class="m">v${p.fam}</span>` : ""}</span>` +
       `<span class="pip">–</span><span class="pl"></span><span class="pco"></span><span class="pms"></span></li>`;
     // only: a landing page lists just the groups it tests
+    // a group whose numbers are read differently from a local test carries a line of its own under the heading
+    const NOTE = { owncn: "g_owncn_note" };
     const groupsOf = (first, only) => [first, ...GROUPS.filter(g => g !== first)].filter(g => g && (!only || only.includes(g)))
-      .map(g => `<div class="pg" data-g="${g}"><h3>${esc(T("g_" + g))}<b class="pg-n"></b></h3><ul>${PROBES.filter(p => p.g === g).map(row).join("")}</ul></div>`).join("\n");
+      .map(g => `<div class="pg" data-g="${g}"><h3>${esc(T("g_" + g))}<b class="pg-n"></b></h3>` +
+        (NOTE[g] ? `<p class="pg-note">${esc(T(NOTE[g]))}</p>` : "") + `<ul>${PROBES.filter(p => p.g === g).map(row).join("")}</ul></div>`).join("\n");
     // the check table's rows: label now, status and value once the probes are in
     const checks = CHECKS.map(r => `<li class="fr" data-r="${r}"><i class="st"></i><span class="fr-l">${esc(T("r_" + r))}</span><span class="fr-v"><span class="bar"></span></span></li>`).join("");
     const faqOf = list => list.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("\n");

@@ -389,7 +389,8 @@
       for (const r of res) if (r.geo && (r.geo.cc || r.geo.asn) && !S.geo[r.ip]) S.geo[r.ip] = r.geo;
       // geo-aware answers first, so a lookup isn't spent on a network another probe is about to name
       setTimeout(() => { if (gen === S.gen) for (const r of res) lookup(r.ip); }, 1200);
-      if (!p.self) { if (res.length) won++; else if (++lost >= 12) blocked(); }
+      // this site's own probes don't count toward the ad-blocker guess: a blocker leaves them alone
+      if (!(p.self || p.anchor || p.g === "own" || p.g === "owncn")) { if (res.length) won++; else if (++lost >= 12) blocked(); }
       renderRow(p); renderGroups(); setProg(++d, RUNS.length); live();
     }));
     clearTimeout(blockT);

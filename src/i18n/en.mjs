@@ -84,6 +84,8 @@ export default {
   g_stack: "IPv4-only / IPv6-only sites",
   g_udp: "WebRTC (UDP)",
   g_own: "This site's Tokyo server: TCP and UDP ports",
+  g_owncn: "This site's server in mainland China: TCP and UDP ports",
+  g_owncn_note: "Every visitor crosses a border to reach this machine, so these are cross-border readings, not domestic speed; a port that doesn't answer is simply unreachable.",
 
 
   faq_h: "Questions",

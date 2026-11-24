@@ -82,6 +82,8 @@ export default {
   g_stack: "仅 IPv4 / 仅 IPv6 网站",
   g_udp: "WebRTC（UDP）",
   g_own: "本站东京服务器：TCP / UDP 各端口",
+  g_owncn: "本站国内服务器：TCP / UDP 各端口",
+  g_owncn_note: "每个访客到这台机器都要跨境，所以看的是跨境段，不代表国内用户的速度；端口没有回应只说明连不上。",
 
 
   faq_h: "常见问题",
