@@ -14,7 +14,7 @@ test("probes: unique ids, known groups and readers, https or stun", () => {
     assert.ok(GROUPS.includes(p.g), p.id);
     // this site's own probe asks the page's host, under the name the page gives it
     assert.ok(p.self ? p.url === "/_ms/me" : p.read === "stun" ? p.url.startsWith("stun:") : p.url.startsWith("https://"), p.id);
-    assert.ok(p.self || (p.host && p.name), p.id);
+    assert.ok(p.self || (p.host && (p.name || p.nameKey)), p.id);
   }
 });
 
@@ -76,7 +76,7 @@ test("exits: grouped by network, direct first, labeled D/P, from the shared core
 test("anchors: path and kind are two dimensions; no owner information is unknown, not direct", () => {
   const geo = { "1.1.1.1": { cc: "CN", city: "Beijing", asn: 4808, org: "China Unicom" }, "5.5.5.5": { cc: "JP", city: "Tokyo", asn: 16509, org: "Amazon.com" } };
   const E = groupExits([{ ip: "1.1.1.1", probe: "acn" }, { ip: "1.1.1.1", probe: "ipip" },
-    { ip: "5.5.5.5", probe: "aintl" }, { ip: "5.5.5.5", probe: "ipsb" }], geo, GROUP_OF, "off", { cn: "1.1.1.1", intl: "5.5.5.5" });
+    { ip: "5.5.5.5", probe: "t443" }, { ip: "5.5.5.5", probe: "ipsb" }], geo, GROUP_OF, "off", { cn: "1.1.1.1", intl: "5.5.5.5" });
   // the anchor says which route an exit is on; the kind is who owns it
   assert.deepEqual(E.map(e => [e.letter, e.kind, e.path]), [["D", "direct", "cn"], ["P", "proxy", "intl"]]);
   // Cloudflare's own network is a proxy with or without WARP; WARP on is the reason it gives
@@ -84,10 +84,10 @@ test("anchors: path and kind are two dimensions; no owner information is unknown
   assert.deepEqual(groupExits([{ ip: "8.8.8.8", probe: "ipsb" }], { "8.8.8.8": CF }, GROUP_OF, "off").map(e => [e.kind, e.dc, e.warp]), [["proxy", true, false]]);
   assert.deepEqual(groupExits([{ ip: "8.8.8.8", probe: "ipsb" }], { "8.8.8.8": CF }, GROUP_OF, "on").map(e => [e.kind, e.dc, e.warp]), [["proxy", false, true]]);
   // a VPN brand's exit follows the anchor too, and is still a proxy
-  const V = groupExits([{ ip: "9.9.9.9", probe: "aintl" }], { "9.9.9.9": { cc: "SE", asn: 64500, org: "Mullvad VPN AB" } }, GROUP_OF, "off", { intl: "9.9.9.9" });
+  const V = groupExits([{ ip: "9.9.9.9", probe: "t443" }], { "9.9.9.9": { cc: "SE", asn: 64500, org: "Mullvad VPN AB" } }, GROUP_OF, "off", { intl: "9.9.9.9" });
   assert.deepEqual(V.map(e => [e.letter, e.kind, e.path]), [["P", "proxy", "intl"]]);
   // an exit no lookup knows: "?", unknown, and the verdict says so instead of calling it direct
-  const U = groupExits([{ ip: "7.7.7.7", probe: "aintl" }, { ip: "7.7.7.7", probe: "ipsb" }], {}, GROUP_OF, "off", { intl: "7.7.7.7" });
+  const U = groupExits([{ ip: "7.7.7.7", probe: "t443" }, { ip: "7.7.7.7", probe: "ipsb" }], {}, GROUP_OF, "off", { intl: "7.7.7.7" });
   assert.deepEqual(U.map(e => [e.letter, e.kind]), [["?", "unknown"]]);
   assert.equal(verdictOf(findings(PROBES, U, {}, "", null), U), "unknown");
 });

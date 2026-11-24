@@ -2,7 +2,7 @@
 
 [English](README.md) · **简体中文**
 
-不同的网站，看到的是你的哪个 IP？带规则的代理和 VPN 会按网站选线路，只查一次“我的 IP”只能看到一条线路。[出口照妖镜](https://egress.1ms.dog) 同时询问 66 个探测器，把结果归成几个出口：**D** 是直连，**P** 是代理，**?** 是查不到归属的出口；同类有多个时编号为 D1、D2、P1、P2……
+不同的网站，看到的是你的哪个 IP？带规则的代理和 VPN 会按网站选线路，只查一次“我的 IP”只能看到一条线路。[出口照妖镜](https://egress.1ms.dog) 同时询问 65 个探测器，把结果归成几个出口：**D** 是直连，**P** 是代理，**?** 是查不到归属的出口；同类有多个时编号为 D1、D2、P1、P2……
 
 **在线使用：** https://egress.1ms.dog
 
@@ -22,13 +22,13 @@
 
 | 分组 | 内容 |
 |---|---|
-| 国内网站 | IPIP.NET、爱奇艺、ipify.cn、DNSPod（IPv4 和 IPv6），以及 1ms.dog 自己国内机器上的锚点（`probe.dog.1msapp.com`）：分流规则通常让它们直连 |
-| IP 查询服务 | 本站（1ms.dog shell 的 `/_ms/me`，即 Cloudflare 看到的这次连接；自行部署时用 `/cdn-cgi/trace`）、境外锚点（`probe.1ms.dog`）、IP.SB、ipinfo.io、ipapi.co、ipwho.is、GeoJS、ipleak.net、ident.me、ip.guide、icanhazip、BigDataCloud |
+| 国内网站 | IPIP.NET、爱奇艺、ipify.cn、DNSPod（IPv4 和 IPv6），以及本站自己放在国内的锚点：分流规则通常让它们直连 |
+| IP 查询服务 | 本站（1ms.dog shell 的 `/_ms/me`，即 Cloudflare 看到的这次连接；自行部署时用 `/cdn-cgi/trace`）、IP.SB、ipinfo.io、ipapi.co、ipwho.is、GeoJS、ipleak.net、ident.me、ip.guide、icanhazip、BigDataCloud |
 | AI 服务 | ChatGPT、OpenAI、Sora、Claude、Anthropic、Grok、Perplexity、Copilot、Mistral、Poe、Character.AI、DeepL |
 | 常用网站 | Cloudflare、1.1.1.1、GitLab、npm、Notion、Linear、Zoom、Medium、Coinbase、Crunchyroll、Patreon、Shopify |
 | 仅 IPv4 / 仅 IPv6 | 单栈站点上的 IP.SB、Cloudflare Radar、ipify、icanhazip |
 | WebRTC（UDP） | Cloudflare、Google、Twilio、小米、哔哩哔哩、芒果 TV 的 STUN 服务器 |
-| 本站东京服务器 | 同一个目的地：TCP 443（who.1ms.dog 的 `probe.1ms.dog/conn`，同时读出 MSS）、4433、8080、8443、9443、10443（HTTPS 回声，`echo.1ms.dog`），以及 UDP 3478、19302、51820、40000（STUN，`stun.1ms.dog`）。只换端口或协议出口就变了，说明是代理规则在起作用。服务端见 [`server/`](server/) |
+| 本站东京服务器 | 同一个目的地：TCP 443（who.1ms.dog 的探针，同时读出 MSS，也是境外的锚点）、4433、8080、8443、9443、10443（HTTPS 回声，`echo.1ms.dog`），以及 UDP 3478、19302、51820、40000（STUN，`stun.1ms.dog`）。只换端口或协议出口就变了，说明是代理规则在起作用。服务端见 [`server/`](server/) |
 
 AI 服务和常用网站读取的是各站点自己域名上的 Cloudflare `/cdn-cgi/trace`：它返回连接过来的地址，并带 `Access-Control-Allow-Origin: *`。所以页面能看到在你的规则下，chatgpt.com、claude.ai 实际看到的是哪个出口。
 

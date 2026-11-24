@@ -4,7 +4,8 @@
 //
 // id    stable id (row ids, share text)
 // g     group, see GROUPS
-// name  shown name; host: the domain shown under it
+// name  shown name; host: the domain shown under it — never for our own probes (see nameKey)
+// nameKey  a string key shown instead of name, translated; its host is not shown either
 // url   what the browser fetches; for read "stun" a STUN server
 // read  how to read the answer (READERS in src/lib.mjs)
 // fam   4 or 6 when the host only has that IP version
@@ -16,9 +17,10 @@
 // group id → whether its probes stand for "abroad" when the page compares routes
 export const GROUPS = ["cn", "intl", "ai", "web", "stack", "udp", "own"];
 // The two anchors (1ms.dog's shared exit rules, docs/egress-contract.md §1): one destination in mainland China and one
-// abroad, neither in any split-tunnel list, on 1ms.dog's own machines. What they see is the route no rule should have
-// changed, which is what tells a split route from an only-one-route; the kind (direct or proxy) still comes from who
-// owns the exit. `anchor: "cn" | "intl"` marks them.
+// abroad, neither in any split-tunnel list, on this site's own machines. What they see is the route no rule should
+// have changed, which is what tells a split route from an only-one-route; the kind (direct or proxy) still comes from
+// who owns the exit. `anchor: "cn" | "intl"` marks them. Their hostnames are never shown on the page: a rule list that
+// named them would route around the anchor, and the page is the easiest place to scrape one from.
 
 const trace = (id, g, name, host) => ({ id, g, name, host, url: `https://${host}/cdn-cgi/trace`, read: "trace" });
 
@@ -29,13 +31,11 @@ export const PROBES = [
   { id: "ipifycn", g: "cn", name: "ipify.cn", host: "api.ipify.cn", url: "https://api.ipify.cn", read: "text" },
   { id: "dnspod4", g: "cn", name: "DNSPod", host: "ipv4.ddnspod.com", url: "https://ipv4.ddnspod.com", read: "text", fam: 4 },
   { id: "dnspod6", g: "cn", name: "DNSPod", host: "ipv6.ddnspod.com", url: "https://ipv6.ddnspod.com", read: "text", fam: 6 },
-  // the route anchor in mainland China
-  { id: "acn", g: "cn", name: "probe.dog.1msapp.com", host: "probe.dog.1msapp.com", url: "https://probe.dog.1msapp.com:9443/conn", read: "conn", anchor: "cn" },
+  // the route anchor in mainland China: shown by its role, never by its host
+  { id: "acn", g: "cn", nameKey: "name_anchor_cn", host: "probe.dog.1msapp.com", url: "https://probe.dog.1msapp.com:9443/conn", read: "conn", anchor: "cn" },
 
   // IP lookup services abroad, this site first
   { id: "self", g: "intl", name: "", host: "", url: "/_ms/me", read: "me", self: 1 },
-  // the route anchor abroad: the same probe binary as the one in China
-  { id: "aintl", g: "intl", name: "probe.1ms.dog", host: "probe.1ms.dog", url: "https://probe.1ms.dog/conn", read: "conn", anchor: "intl" },
   { id: "ipsb", g: "intl", name: "IP.SB", host: "api.ip.sb", url: "https://api.ip.sb/geoip", read: "ipsb" },
   { id: "ipinfo", g: "intl", name: "ipinfo.io", host: "ipinfo.io", url: "https://ipinfo.io/json", read: "ipinfo" },
   { id: "ipapico", g: "intl", name: "ipapi.co", host: "ipapi.co", url: "https://ipapi.co/json/", read: "ipapico" },
@@ -94,10 +94,11 @@ export const PROBES = [
   { id: "stun-bili", g: "udp", name: "Bilibili", host: "stun.chat.bilibili.com", url: "stun:stun.chat.bilibili.com:3478", read: "stun" },
   { id: "stun-hitv", g: "udp", name: "Mango TV", host: "stun.hitv.com", url: "stun:stun.hitv.com:3478", read: "stun" },
 
-  // 1ms.dog's own server in Tokyo, over TCP on several ports and over UDP (STUN) on several: the destination stays the
-  // same, so another exit comes from rules by port or protocol. 443 is who.1ms.dog's probe (/conn, which also reads
-  // the connection's MSS); the rest is this repo's server/ (echo.1ms.dog, stun.1ms.dog).
-  { id: "t443", g: "own", name: "TCP 443", host: "probe.1ms.dog", url: "https://probe.1ms.dog/conn", read: "conn" },
+  // this site's own server in Tokyo, over TCP on several ports and over UDP (STUN) on several: the destination stays
+  // the same, so another exit comes from rules by port or protocol. 443 is who.1ms.dog's probe (/conn, which also
+  // reads the connection's MSS) and is the route anchor abroad, so the page asks it once; the rest is this repo's
+  // server/ (echo.1ms.dog, stun.1ms.dog).
+  { id: "t443", g: "own", name: "TCP 443", host: "probe.1ms.dog", url: "https://probe.1ms.dog/conn", read: "conn", anchor: "intl" },
   ...[4433, 8080, 8443, 9443, 10443].map(n => ({ id: "t" + n, g: "own", name: "TCP " + n, host: "echo.1ms.dog", url: `https://echo.1ms.dog:${n}/`, read: "echo" })),
   ...[3478, 19302, 51820, 40000].map(n => ({ id: "u" + n, g: "own", name: "UDP " + n, host: "stun.1ms.dog", url: `stun:stun.1ms.dog:${n}`, read: "stun" })),
 ];

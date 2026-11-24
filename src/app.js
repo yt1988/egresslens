@@ -48,7 +48,7 @@
   // The browser's time zone → country from the shared core (src/egress.js), the site's one table.
   const tzCc = () => { try { return tzCountry(Intl.DateTimeFormat().resolvedOptions().timeZone) || ""; } catch (e) { return ""; } };
   const GROUP_OF = Object.fromEntries(PROBES.map(p => [p.id, p.read === "stun" ? "udp" : p.g]));
-  const NAME_OF = id => { const p = PROBES.find(x => x.id === id); return !p ? "" : p.self ? t("self_name") : p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name; };
+  const NAME_OF = id => { const p = PROBES.find(x => x.id === id); return !p ? "" : p.self ? t("self_name") : p.nameKey ? t(p.nameKey) : p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name; };
   const isStun = p => p.read === "stun";
 
   // A probe that gives no address says why, as { why, n }: "timeout", "http" (n = status), "net" (no connection:
@@ -349,7 +349,8 @@
     renderExits(); renderChips(); renderFocus();
   }); };
   // A landing page tests only what it is about: its own probes, and the mainland and abroad baselines that tell the
-  // direct exit from the proxy (docs: 1ms-shell tool-contract, "subpages test only their own item")
+  // direct exit from the proxy. (The abroad anchor lives in the Tokyo server group, which a landing page leaves out:
+  // its route falls back to the majority of the probes abroad it does run.)
   const RUNS = D.focus ? PROBES.filter(p => [D.focusGroup, "cn", "intl"].includes(p.g)) : PROBES;
   async function run() {
     leaveShared();

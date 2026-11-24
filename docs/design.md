@@ -22,10 +22,11 @@ asks about 60 destinations at once and groups the addresses they report into exi
   the site-wide core `src/egress.js` (vendored from 1ms.dog, copied verbatim; `docs/egress-contract.md` there has
   them). Do not add a regex here: change the core, then re-copy it.
 - **An anchor says which route, not what kind.** Two probes sit at destinations no split-tunnel list names, one in
-  mainland China (`probe.dog.1msapp.com:9443/conn`) and one in Tokyo (`probe.1ms.dog/conn`). What they see is the route
-  the visitor's rules did not choose, so the two of them tell a split route from a single one, and each exit keeps
-  which anchor it follows (`path`). A proxy's exit follows an anchor too, so a matching anchor never makes an exit
-  direct: the kind is who owns it.
+  mainland China and one on the Tokyo server (its TCP 443 probe; the page asks it once for both jobs). What they see is
+  the route the visitor's rules did not choose, so the two of them tell a split route from a single one, and each exit
+  keeps which anchor it follows (`path`). A proxy's exit follows an anchor too, so a matching anchor never makes an
+  exit direct: the kind is who owns it. The page shows these probes by their role ("This site (China)", "TCP 443"),
+  never by hostname: a rule list that learned an anchor's address would route around it.
 - **The reference exit** for "abroad" is the abroad anchor; when it did not answer, the majority of IP lookup
   services, AI services and popular sites. Mainland sites have the same pair (their anchor, else their majority). A
   probe on another exit than its kind is an exception.

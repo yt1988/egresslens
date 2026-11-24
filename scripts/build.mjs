@@ -80,7 +80,9 @@ export async function build({ check = false } = {}) {
   const lib = libRaw.replace(/^import \{[^}]*\} from "\.\/[\w.-]+";\n?/gm, "").replace(/^export /gm, "");
   const appSrc = await readFile(new URL("app.js", src), "utf8");
   if (!appSrc.includes("/* @lib */")) throw new Error("src/app.js has no /* @lib */ marker");
-  const probes = PROBES.map(({ id, g, name, host, url, read, fam, self, anchor }) => ({ id, g, name, host, url, read, ...(fam ? { fam } : {}), ...(self ? { self } : {}), ...(anchor ? { anchor } : {}) }));
+  const probes = PROBES.map(({ id, g, name, nameKey, host, url, read, fam, self, anchor }) => ({ id, g, name, host, url, read, ...(nameKey ? { nameKey } : {}), ...(fam ? { fam } : {}), ...(self ? { self } : {}), ...(anchor ? { anchor } : {}) }));
+  // this site's own probes are shown by their role, never by their hostname: a rule list must not learn the anchors
+  const ownProbe = p => !!(p.self || p.anchor || p.g === "own");
   const appFull = `const PROBES = ${JSON.stringify(probes)}, GROUPS = ${JSON.stringify(GROUPS)};\n` + inline.join("\n") + `\nconst ${aliases.join(", ")};\n`
     + appSrc.replace("/* @lib */", () => lib);
   new Function(appFull);                                                // must parse
@@ -106,8 +108,8 @@ export async function build({ check = false } = {}) {
     // every probe is in the HTML from the start (crawlers see what is checked; rows never move when results arrive)
     // one line per probe: name (host on hover), the address it saw, the exit label, Cloudflare colo, time
     // this site's own probe is named in the page's language, at the site's address
-    const nameOf = p => p.self ? T("self_name") : p.name, hostOf = p => p.self ? new URL(SITE).host : p.host;
-    const row = p => `<li class="pr" id="p-${p.id}"><span class="pn" title="${esc(hostOf(p))}">${esc(nameOf(p))}${p.fam ? ` <span class="m">v${p.fam}</span>` : ""}</span>` +
+    const nameOf = p => p.self ? T("self_name") : p.nameKey ? T(p.nameKey) : p.name, hostOf = p => p.self ? new URL(SITE).host : p.host;
+    const row = p => `<li class="pr" id="p-${p.id}"><span class="pn"${ownProbe(p) ? "" : ` title="${esc(hostOf(p))}"`}>${esc(nameOf(p))}${p.fam ? ` <span class="m">v${p.fam}</span>` : ""}</span>` +
       `<span class="pip">–</span><span class="pl"></span><span class="pco"></span><span class="pms"></span></li>`;
     // only: a landing page lists just the groups it tests
     const groupsOf = (first, only) => [first, ...GROUPS.filter(g => g !== first)].filter(g => g && (!only || only.includes(g)))
@@ -213,7 +215,7 @@ export async function build({ check = false } = {}) {
 
 - Page: ${SITE}/ (also ${langs.slice(1).map(([, s]) => "/" + s + "/").join(", ")})
 ${LANDS.map(l => `- ${en["lp_" + l.id].nav}: ${SITE}/${l.slug}/ (same tool, this check first)`).join("\n")}
-- Probes: ${GROUPS.map(g => `${en["g_" + g]}: ${PROBES.filter(p => p.g === g).map(p => p.self ? new URL(SITE).host : p.host).join(", ")}`).join("; ")}
+- Probes: ${GROUPS.map(g => `${en["g_" + g]}: ${[...new Set(PROBES.filter(p => p.g === g).map(p => ownProbe(p) ? "1ms.dog's own server" : p.host))].join(", ")}`).join("; ")}
 - Source: https://github.com/yt1988/egresslens
 `;
 

@@ -2,7 +2,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Which IP addresses does the internet see you as? Rule-based proxies and VPNs pick a route per website, so one "what is my IP" check only sees its own route. [EgressLens](https://egress.1ms.dog) asks 66 probes at once and groups what they see into exits: **D** for a direct route, **P** for a proxy, **?** when the owner of an exit can't be looked up, numbered D1, D2, P1, P2… when there is more than one.
+Which IP addresses does the internet see you as? Rule-based proxies and VPNs pick a route per website, so one "what is my IP" check only sees its own route. [EgressLens](https://egress.1ms.dog) asks 65 probes at once and groups what they see into exits: **D** for a direct route, **P** for a proxy, **?** when the owner of an exit can't be looked up, numbered D1, D2, P1, P2… when there is more than one.
 
 **Live:** https://egress.1ms.dog
 
@@ -22,17 +22,17 @@ Which IP addresses does the internet see you as? Rule-based proxies and VPNs pic
 
 | Group | What it shows |
 |---|---|
-| Sites in mainland China | IPIP.NET, iQIYI, ipify.cn, DNSPod (IPv4 and IPv6), and an anchor on 1ms.dog's own mainland machine (`probe.dog.1msapp.com`): the route rules usually send direct |
-| IP lookup services | this site (the 1ms.dog shell's `/_ms/me`, Cloudflare's view of the connection; `/cdn-cgi/trace` when self-hosted), the abroad anchor (`probe.1ms.dog`), IP.SB, ipinfo.io, ipapi.co, ipwho.is, GeoJS, ipleak.net, ident.me, ip.guide, icanhazip, BigDataCloud |
+| Sites in mainland China | IPIP.NET, iQIYI, ipify.cn, DNSPod (IPv4 and IPv6), and this site's own anchor in mainland China: the route rules usually send direct |
+| IP lookup services | this site (the 1ms.dog shell's `/_ms/me`, Cloudflare's view of the connection; `/cdn-cgi/trace` when self-hosted), IP.SB, ipinfo.io, ipapi.co, ipwho.is, GeoJS, ipleak.net, ident.me, ip.guide, icanhazip, BigDataCloud |
 | AI services | ChatGPT, OpenAI, Sora, Claude, Anthropic, Grok, Perplexity, Copilot, Mistral, Poe, Character.AI, DeepL |
 | Popular sites | Cloudflare, 1.1.1.1, GitLab, npm, Notion, Linear, Zoom, Medium, Coinbase, Crunchyroll, Patreon, Shopify |
 | IPv4 only / IPv6 only | IP.SB, Cloudflare Radar, ipify, icanhazip on single-stack hosts |
 | WebRTC (UDP) | STUN servers of Cloudflare, Google, Twilio, Xiaomi, Bilibili and Mango TV |
-| 1ms.dog's Tokyo server | one destination over TCP 443 (who.1ms.dog's `probe.1ms.dog/conn`, which also reads the MSS), 4433, 8080, 8443, 9443, 10443 (HTTPS echo, `echo.1ms.dog`) and UDP 3478, 19302, 51820, 40000 (STUN, `stun.1ms.dog`): an exit that changes with the port or protocol alone comes from the proxy's rules. The server is [`server/`](server/) |
+| 1ms.dog's Tokyo server | one destination over TCP 443 (who.1ms.dog's probe, which also reads the MSS; it is the anchor for the route abroad), 4433, 8080, 8443, 9443, 10443 (HTTPS echo, `echo.1ms.dog`) and UDP 3478, 19302, 51820, 40000 (STUN, `stun.1ms.dog`): an exit that changes with the port or protocol alone comes from the proxy's rules. The server is [`server/`](server/) |
 
 AI services and popular sites are read through Cloudflare's `/cdn-cgi/trace` on each site's own domain: it returns the address that connected, with `Access-Control-Allow-Origin: *`. So the page sees exactly which exit chatgpt.com or claude.ai gets under your rules.
 
-The two anchors are destinations no split-tunnel list names, one in mainland China and one in Tokyo: what they see is
+The two anchors are destinations no split-tunnel list names, one in mainland China and one on the Tokyo server: what they see is
 the route a proxy's rules did not choose, so they tell a split route from a single one. They say which route an exit
 is on; whether that route is direct or a proxy comes from who owns the address.
 
