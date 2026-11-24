@@ -48,7 +48,17 @@
   // The browser's time zone → country from the shared core (src/egress.js), the site's one table.
   const tzCc = () => { try { return tzCountry(Intl.DateTimeFormat().resolvedOptions().timeZone) || ""; } catch (e) { return ""; } };
   const GROUP_OF = Object.fromEntries(PROBES.map(p => [p.id, p.read === "stun" ? "udp" : p.g]));
-  const NAME_OF = id => { const p = PROBES.find(x => x.id === id); return !p ? "" : p.self ? t("self_name") : p.nameKey ? t(p.nameKey) : p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name; };
+  // a name for a probe where its group heading is not next to it (findings, the seen-by list). This site's own probes
+  // carry where they are, so "TCP 443" from Tokyo and from Shanghai are not one name.
+  const NAME_OF = id => {
+    const p = PROBES.find(x => x.id === id);
+    if (!p) return "";
+    if (p.self) return t("self_name");
+    if (p.nameKey) return t(p.nameKey);
+    if (p.g === "own") return t("loc_tokyo") + " " + p.name;
+    if (p.g === "owncn") return t("loc_shanghai") + " " + p.name;
+    return p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name;
+  };
   const isStun = p => p.read === "stun";
 
   // A probe that gives no address says why, as { why, n }: "timeout", "http" (n = status), "net" (no connection:

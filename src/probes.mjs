@@ -19,8 +19,8 @@
 // there yet. The hostname is never shown on the page, like the rest of this site's own probes.
 const CN_PORTS_READY = false;
 const CN_HOST = "echo.dog.1msapp.com";
-const CN_PORTS = [...[4433, 8080, 8443, 10443, 2053].map(n => ({ id: "cnt" + n, g: "owncn", name: "CN TCP " + n, host: CN_HOST, url: `https://${CN_HOST}:${n}/`, read: "echo" })),
-  ...[3478, 19302, 51820, 40000].map(n => ({ id: "cnu" + n, g: "owncn", name: "CN UDP " + n, host: CN_HOST, url: `stun:${CN_HOST}:${n}`, read: "stun" }))];
+const CN_PORTS = [...[4433, 8080, 8443, 10443, 2053].map(n => ({ id: "cnt" + n, g: "owncn", name: "TCP " + n, host: CN_HOST, url: `https://${CN_HOST}:${n}/`, read: "echo" })),
+  ...[3478, 19302, 51820, 40000].map(n => ({ id: "cnu" + n, g: "owncn", name: "UDP " + n, host: CN_HOST, url: `stun:${CN_HOST}:${n}`, read: "stun" }))];
 
 // group id → whether its probes stand for "abroad" when the page compares routes
 export const GROUPS = ["cn", "intl", "ai", "web", "stack", "udp", "own", ...(CN_PORTS_READY ? ["owncn"] : [])];
