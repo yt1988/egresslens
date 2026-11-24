@@ -17,7 +17,7 @@
 // This site's own server in mainland China, by port and protocol, like the Tokyo one. The machine is being set up
 // (2026-11-24): flip this on once every port answers from outside, so a visitor never sees rows for ports that are not
 // there yet. The hostname is never shown on the page, like the rest of this site's own probes.
-const CN_PORTS_READY = false;
+const CN_PORTS_READY = true;
 const CN_HOST = "echo.dog.1msapp.com";
 const CN_PORTS = [...[4433, 8080, 8443, 10443, 2053].map(n => ({ id: "cnt" + n, g: "owncn", name: "TCP " + n, host: CN_HOST, url: `https://${CN_HOST}:${n}/`, read: "echo" })),
   ...[3478, 19302, 51820, 40000].map(n => ({ id: "cnu" + n, g: "owncn", name: "UDP " + n, host: CN_HOST, url: `stun:${CN_HOST}:${n}`, read: "stun" }))];

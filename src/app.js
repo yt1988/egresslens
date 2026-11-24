@@ -55,8 +55,8 @@
     if (!p) return "";
     if (p.self) return t("self_name");
     if (p.nameKey) return t(p.nameKey);
-    if (p.g === "own") return t("loc_tokyo") + " " + p.name;
-    if (p.g === "owncn") return t("loc_shanghai") + " " + p.name;
+    if (p.g === "own") return t("name_tokyo") + " " + p.name;
+    if (p.g === "owncn") return t("name_anchor_cn") + " " + p.name;
     return p.g === "stack" ? p.name + " IPv" + p.fam : p.g === "udp" ? "STUN " + p.name : p.name;
   };
   const isStun = p => p.read === "stun";

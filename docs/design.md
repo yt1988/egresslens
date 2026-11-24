@@ -25,8 +25,10 @@ asks about 60 destinations at once and groups the addresses they report into exi
   mainland China and one on the Tokyo server (its TCP 443 probe; the page asks it once for both jobs). What they see is
   the route the visitor's rules did not choose, so the two of them tell a split route from a single one, and each exit
   keeps which anchor it follows (`path`). A proxy's exit follows an anchor too, so a matching anchor never makes an
-  exit direct: the kind is who owns it. The page shows these probes by their role and place ("This site (Shanghai)",
-  "Tokyo TCP 443"), never by hostname: a rule list that learned an anchor's address would route around it.
+  exit direct: the kind is who owns it. This site's own checkpoints are named by city everywhere — "This site
+  (Tokyo)", "This site (Shanghai)" on group headings, findings and the seen-by list — and never by hostname: a rule
+  list that learned an anchor's address would route around it. "This site (Cloudflare)" is the page's own host (the
+  Cloudflare view of this connection), not a node.
 - **The reference exit** for "abroad" is the abroad anchor; when it did not answer, the majority of IP lookup
   services, AI services and popular sites. Mainland sites have the same pair (their anchor, else their majority). A
   probe on another exit than its kind is an exception.

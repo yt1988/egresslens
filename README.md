@@ -2,7 +2,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Which IP addresses does the internet see you as? Rule-based proxies and VPNs pick a route per website, so one "what is my IP" check only sees its own route. [EgressLens](https://egress.1ms.dog) asks 65 probes at once and groups what they see into exits: **D** for a direct route, **P** for a proxy, **?** when the owner of an exit can't be looked up, numbered D1, D2, P1, P2… when there is more than one.
+Which IP addresses does the internet see you as? Rule-based proxies and VPNs pick a route per website, so one "what is my IP" check only sees its own route. [EgressLens](https://egress.1ms.dog) asks 74 probes at once and groups what they see into exits: **D** for a direct route, **P** for a proxy, **?** when the owner of an exit can't be looked up, numbered D1, D2, P1, P2… when there is more than one.
 
 **Live:** https://egress.1ms.dog
 
