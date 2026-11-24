@@ -29,6 +29,10 @@ asks about 60 destinations at once and groups the addresses they report into exi
   (Tokyo)", "This site (Shanghai)" on group headings, findings and the seen-by list — and never by hostname: a rule
   list that learned an anchor's address would route around it. "This site (Cloudflare)" is the page's own host (the
   Cloudflare view of this connection), not a node.
+- **Every exit says who saw it.** Each card carries the vantages among the probes that reported it — "seen by this
+  site (Cloudflare)", "seen by destinations in mainland China", "seen by destinations abroad" — and the exit count sits
+  under the verdict. A visitor who sees Beijing here and Tokyo on a sibling tool then reads two destinations talking,
+  not one tool being wrong; the exit's own classification does not change.
 - **The reference exit** for "abroad" is the abroad anchor; when it did not answer, the majority of IP lookup
   services, AI services and popular sites. Mainland sites have the same pair (their anchor, else their majority). A
   probe on another exit than its kind is an exception.

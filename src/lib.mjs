@@ -66,6 +66,12 @@ export const srflxAt = line => { const ip = srflxOf(line); return ip && { ip, po
 export const tunneled = (ip, mss) => !!mss && mss <= (fam(ip) === 6 ? 1380 : 1400);
 
 /* ---------- exits ---------- */
+// Who saw a probe's answer: this site's own host (Cloudflare's view of the connection), a destination in mainland
+// China, or one abroad. The three read differently on purpose: a Beijing exit and a Tokyo exit are two destinations
+// disagreeing, not one tool being wrong.
+const VANTAGE_CN = new Set(["stun-mi", "stun-bili", "stun-hitv"]);   // STUN servers that sit in mainland China
+export const vantageOf = p => p.self ? "cf" : (p.g === "cn" || p.g === "owncn" || VANTAGE_CN.has(p.id)) ? "cn" : "intl";
+
 // Regions where neither OpenAI (ChatGPT) nor Anthropic (Claude) offers its service, and the time zone → country
 // table, both from the shared core (one table for the whole site).
 export const AI_BLOCKED = coreAIBlocked;

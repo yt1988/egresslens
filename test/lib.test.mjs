@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry } from "../src/lib.mjs";
+import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry, vantageOf } from "../src/lib.mjs";
 import { PROBES, GROUPS } from "../src/probes.mjs";
 import { isRelayIp } from "../src/relay.mjs";
 
@@ -60,6 +60,18 @@ function scenario() {
   }
   return { seen, ok };
 }
+
+test("vantage: who saw an answer", () => {
+  assert.equal(vantageOf({ self: 1 }), "cf");
+  assert.equal(vantageOf({ g: "cn" }), "cn");
+  assert.equal(vantageOf({ g: "owncn" }), "cn");
+  assert.equal(vantageOf({ g: "own" }), "intl");
+  assert.equal(vantageOf({ g: "ai" }), "intl");
+  // the STUN servers: Xiaomi, Bilibili and Mango TV are in mainland China, the others abroad
+  assert.equal(vantageOf({ id: "stun-mi", g: "udp" }), "cn");
+  assert.equal(vantageOf({ id: "stun-bili", g: "udp" }), "cn");
+  assert.equal(vantageOf({ id: "stun-cf", g: "udp" }), "intl");
+});
 
 test("exits: grouped by network, direct first, labeled D/P, from the shared core", () => {
   const { seen } = scenario();

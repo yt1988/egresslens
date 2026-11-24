@@ -181,6 +181,14 @@
   const EXT = '<svg class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
   const asRef = n => ASN ? `<a class="asl" href="${esc(toolHref(ASN, "AS" + n))}" title="${esc(t("asn_title"))}" target="_blank" rel="noopener">AS${n}</a>` : "AS" + n;
   const ipQ = ip => IPQS && !masked() ? `<a class="ipq" href="${esc(IPQS)}/?ip=${encodeURIComponent(ip)}" title="${esc(t("ipq_title"))}" target="_blank" rel="noopener">${esc(ip)}</a>` : esc(ipTxt(ip));
+  // Who saw this exit: the page's own host (Cloudflare's view), destinations in mainland China, destinations abroad.
+  // A visitor comparing this page with another tool needs that line before the names.
+  const V_ORDER = ["cf", "cn", "intl"];
+  const whoSaw = e => {
+    const ids = new Set(e.probes || []);
+    const got = new Set(PROBES.filter(p => ids.has(p.id)).map(vantageOf));
+    return V_ORDER.filter(k => got.has(k)).map(k => t("v_" + k));
+  };
   // which checkpoints saw an exit, under the names the page shows them by: the answer to "where does this exit come
   // from". In the page's own order, each name once (two anchors share one name, a stack host shows its family).
   const seenNames = e => {
@@ -195,6 +203,7 @@
     return `<li class="ex">${chip(e.letter, true)}<div class="ex-b">` +
       `<div class="where">${flag(e.cc)}<b>${esc(whereOf(e))}</b>${e.org || e.asn ? `<span class="m">${esc(e.org)}${e.asn ? (e.org ? " · " : "") + asRef(e.asn) : ""}</span>` : ""}</div>` +
       `<div class="ips">${ips}</div>` + (e.relay ? `<div class="relay">${esc(t("ex_relay"))}</div>` : "") +
+      (whoSaw(e).length ? `<div class="who">${whoSaw(e).map(esc).join(" · ")}</div>` : "") +
       (seen ? `<div class="m seen">${esc(t("ex_seen"))}${esc(t("colon"))}${esc(seen)}</div>` : "") +
       (tunOf(e) ? `<div class="m tun">${esc(t("ex_tun", { n: tunOf(e) }))}</div>` : "") + `</div></li>`;
   };
@@ -478,6 +487,9 @@
   function renderVerdict() {
     const on = S.done && S.exits.length > 0, v = on && verdict();
     $("#verdict").hidden = !on;
+    // the count of exits found, for a visitor who sees one number here and another on a sibling tool
+    const more = $("#exitN"), many = on && S.exits.length > 1;
+    if (more) { more.hidden = !many; if (many) more.textContent = t("more_exits", { n: S.exits.length }); }
     if (!on) return;
     $("#vTxt").textContent = t("vh_" + v);
     $("#verdict").classList.toggle("bad", v === "leak" || v === "ai");
