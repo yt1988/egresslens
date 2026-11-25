@@ -41,6 +41,10 @@ test("own endpoints: from the injected metas, and none without them", () => {
     own: { tcp: "echo.intl.test", udp: "stun.intl.test" },
     owncn: { tcp: "cn.test", udp: "cn.test" },
   });
+  // the shell hands over full anchor URLs: /conn is not appended twice
+  const full = ownEndpoints(docOf({ "ms-anchors": "cn=https://cn.test:9443/conn;intl=https://intl.test/conn" }));
+  assert.equal(full.acn, "https://cn.test:9443/conn");
+  assert.equal(full.intl, "https://intl.test/conn");
   // a self-hosted copy: no metas, no own probes, and nothing invented
   const none = ownEndpoints(docOf({}));
   assert.deepEqual(none, { acn: "", intl: "", own: { tcp: "", udp: "" }, owncn: { tcp: "", udp: "" } });

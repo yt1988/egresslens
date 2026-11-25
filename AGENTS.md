@@ -71,7 +71,7 @@ The page: `npx wrangler deploy` (a static-assets Worker, free and unmetered), or
 `public/_headers` holds the security headers in Cloudflare's format. The WARP check reads `/cdn-cgi/trace` on the
 page's own host, so it only works behind Cloudflare.
 
-Our own probes are deploy data: the hosting site adds `<meta name="ms-anchors" content="cn=<base-url>;intl=<base-url>">`
+Our own probes are deploy data: the hosting site adds `<meta name="ms-anchors" content="cn=<base-url>;intl=<base-url>">` (a value may already be the full `/conn` URL)
 and `<meta name="ms-egress" content="stun=<host>:<port>,…;echo=<base-url>[,<base-url>]">` to the page (on 1ms.dog the
 shell does it for every tool page). The echo bases come in server order: first the Tokyo one, then the mainland one; a
 STUN host joins the server whose echo host shares its last two labels. The ports stay in `src/probes.mjs`. Without the

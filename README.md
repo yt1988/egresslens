@@ -55,7 +55,7 @@ npx wrangler deploy        # a static-assets Worker: no script, free and unmeter
 
 **This site's own probes** (the two route anchors and the port-and-protocol servers) are deploy data, not repository content: the hosting site writes them into each HTML page as `<meta name="ms-anchors">` and `<meta name="ms-egress">` (on 1ms.dog the shell adds them to every tool page; a self-hosted copy can add the two tags to `src/page.html` itself):
 
-- `ms-anchors` content = `cn=<base-url>;intl=<base-url>` — the mainland anchor and the one abroad; `/conn` is appended to each.
+- `ms-anchors` content = `cn=<base-url>;intl=<base-url>` — the mainland anchor and the one abroad; `/conn` is appended to each unless the value already ends with it.
 - `ms-egress` content = `stun=<host>:<port>,…;echo=<base-url>[,<base-url>]` — the servers asked over several ports; the echo bases come in server order (the first is shown as Tokyo, the second as the mainland server), and a STUN host joins the server whose echo host shares its last two labels. The port lists stay in `src/probes.mjs`.
 
 Without these tags the page leaves those probes out, starts from the public services only and says so; nothing falls back to a third party.

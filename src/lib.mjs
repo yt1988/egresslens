@@ -72,10 +72,13 @@ export const tunneled = (ip, mss) => !!mss && mss <= (fam(ip) === 6 ? 1380 : 140
 // has neither, so the probes that need them are left out instead of falling back to anyone else's service.
 // The echo bases come in server order: the first is Tokyo (group own), the second the mainland server (owncn). A STUN
 // host joins the server whose echo host shares its last two labels (stun.<site> with echo.<site>; a host with itself).
-const httpBase = (value, path) => {
+// an anchor is `<base>/conn`, but a deployment may already hand over the full URL: accept both
+const anchorUrl = value => {
   try {
     const u = new URL(String(value || ""));
-    return /^https?:$/.test(u.protocol) && u.hostname ? u.href.replace(/\/+$/, "") + path : "";
+    if (!/^https?:$/.test(u.protocol) || !u.hostname) return "";
+    const href = u.href.replace(/\/+$/, "");
+    return /\/conn$/.test(href) ? href : href + "/conn";
   } catch (e) { return ""; }
 };
 const hostOfUrl = value => {
@@ -89,7 +92,7 @@ export function ownEndpoints(doc = globalThis.document) {
   const site = h => h.split(".").slice(-2).join(".");
   const stunFor = h => (h ? stuns.find(s => site(s) === site(h)) || "" : "");
   return {
-    acn: httpBase(A.cn, "/conn"), intl: httpBase(A.intl, "/conn"),
+    acn: anchorUrl(A.cn), intl: anchorUrl(A.intl),
     own: { tcp: echoes[0] || "", udp: stunFor(echoes[0]) },
     owncn: { tcp: echoes[1] || "", udp: stunFor(echoes[1]) },
   };
