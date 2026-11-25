@@ -7,6 +7,8 @@
 //     A browser reaches it through WebRTC (iceServers stun:stun.1ms.dog:<port>).
 //   - HTTPS on TCP ports: GET / answers {"ip","port","proto"} for the connection, readable from any origin.
 //   - WebSocket on /ws (one TLS port): greets with {"v":1,"pop":"NRT"}, then echoes text frames, for round-trip timing.
+//   - MS_AUTH_SECRET set: the HTTPS routes and /ws require the token the page carries (see auth.go); unset, nothing is
+//     checked. STUN has no authentication of its own.
 //
 // Nothing is logged or stored: each answer goes back to the address that asked and is forgotten. Errors only.
 package main
@@ -21,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"os"
 	"strings"
 	"time"
 
@@ -44,9 +47,10 @@ func main() {
 	if err != nil {
 		log.Printf("no certificate, HTTPS ports off: %v", err)
 	} else {
+		authn := newAuth(os.Getenv("MS_AUTH_SECRET"))
 		cfg := &tls.Config{Certificates: []tls.Certificate{kp}, MinVersion: tls.VersionTLS12}
 		for _, p := range split(*tcp) {
-			go serve(p, p == *wsPort, cfg)
+			go serve(p, p == *wsPort, cfg, authn)
 		}
 	}
 	select {}
@@ -120,7 +124,7 @@ func answer(q []byte, from netip.AddrPort) []byte {
 
 /* ---------- HTTPS echo and /ws ---------- */
 
-func serve(port string, ws bool, cfg *tls.Config) {
+func serve(port string, ws bool, cfg *tls.Config, authn auth) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
@@ -138,7 +142,7 @@ func serve(port string, ws bool, cfg *tls.Config) {
 		mux.HandleFunc("/ws", echo)
 	}
 	s := &http.Server{
-		Addr: ":" + port, Handler: mux, TLSConfig: cfg.Clone(),
+		Addr: ":" + port, Handler: authn.wrap(mux), TLSConfig: cfg.Clone(),
 		ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 30 * time.Second, MaxHeaderBytes: 8 << 10,
 		ErrorLog: log.New(discard{}, "", 0), // handshake noise from scanners isn't an error worth keeping
 	}

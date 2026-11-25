@@ -101,7 +101,10 @@ The echo server is optional: without it the page works, and the group of probes 
    is a working unit: change the user, the path and the certificate directory (`LoadCredential=` reads the chain and
    key, so the user needs no access to the key itself). Flags: `-udp` and `-tcp` take the port lists, `-ws` the HTTPS
    port that also serves `/ws`, `-cert` and `-key` the PEM files. Without a certificate the HTTPS ports stay off and
-   STUN still runs.
+   STUN still runs. With `MS_AUTH_SECRET` in the environment the HTTPS routes and `/ws` also require the short-lived
+   token a page carries (HMAC-SHA256, see the 1ms.dog tool contract's endpoint-authentication section); unset, every
+   request is answered as before — the self-hosted default. The secret stays in the environment, never in this
+   repository or its docs.
 5. Open the ports in the firewall, for IPv4 and IPv6: UDP 3478, 19302, 51820, 40000 and TCP 4433, 8080, 8443, 9443,
    10443 by default. HTTPS ports must not be ones browsers refuse (22, 25 and the rest of Chrome's list), and plain
    HTTP won't do: an https page can't read it.
