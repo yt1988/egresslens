@@ -43,7 +43,7 @@ export const READERS = {
   ipify: b => ({ ip: b.ip }),
   me: b => ({ ip: b.ip, geo: geo(b.country, b.city, b.asn, b.org), cf: { colo: b.colo || "", loc: b.country || "", warp: "off" } }),
   bdc: b => ({ ip: b.ipString }),
-  // echo.1ms.dog: { ip, port, proto }; probe.1ms.dog/conn: { ip, mss, … } (or /fp's shape, { ip, tcp: { mss } })
+  // the echo host: { ip, port, proto }; the probe's /conn: { ip, mss, … } (or /fp's shape, { ip, tcp: { mss } })
   echo: b => ({ ip: b.ip }),
   conn: b => ({ ip: b.ip, mss: +(b.mss ?? (b.tcp && b.tcp.mss)) || null }),
 };

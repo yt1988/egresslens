@@ -3,9 +3,21 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { LANGS, LANDS, loadI18n } from "../scripts/build.mjs";
+import { PROBES } from "../src/probes.mjs";
 
 const I = await loadI18n();
 const page = async slug => readFile(new URL(`../public/${slug ? slug + "/" : ""}index.html`, import.meta.url), "utf8");
+
+// Every absolute URL a shipped page or script may name: this tool's own domain and the third parties it probes or
+// links to. This site's measurement and service endpoints are not third parties, so none of them may appear.
+const ALLOWED_HOSTS = new Set([
+  "egress.1ms.dog", "github.com", "schema.org",
+  ...PROBES.flatMap(p => (p.url && /^https?:/.test(p.url) ? [new URL(p.url).host] : [])),
+]);
+const hostsIn = s => [...s.matchAll(/https?:\/\/([^/"'\s<>)]+)/g)].map(m => m[1].replace(/:\d+$/, ""));
+const assertHostsAllowed = (s, where) => {
+  for (const host of new Set(hostsIn(s))) assert.ok(ALLOWED_HOSTS.has(host), `${where}: unexpected host ${host}`);
+};
 
 test("every language has every string, with the same placeholders", () => {
   for (const [l] of LANGS) {
@@ -90,16 +102,17 @@ test("landing pages: their own words, canonical to themselves, every language li
 
 
 test("own probes wait for the injected endpoint metas", async () => {
-  // every page draws this site's own probes hidden, and carries no hostname for them; the app unhides what it got
+  // every page draws this site's own probes hidden, and names no endpoint for them: only the tool's domain and
+  // third parties appear; the app unhides what the injected metas gave it
   for (const [l, slug] of LANGS) {
     const h = await page(slug);
     for (const id of ["acn", "t443", "u3478", "cnt4433", "cnu3478"]) assert.ok(h.includes(`id="p-${id}" hidden`), `${l}: ${id}`);
     assert.match(h, /<div class="pg" data-g="own" hidden>/, l);
     assert.match(h, /<div class="pg" data-g="owncn" hidden>/, l);
-    for (const host of ["probe.1ms.dog", "probe.dog.1msapp.com", "echo.1ms.dog", "stun.1ms.dog", "echo.dog.1msapp.com"]) assert.ok(!h.includes(host), `${l}: ${host}`);
+    assertHostsAllowed(h, `${l}: page`);
   }
   const js = await readFile(new URL("../public/assets/" + /app\.[0-9a-f]+\.js/.exec(await page(""))[0], import.meta.url), "utf8");
-  for (const host of ["probe.1ms.dog", "probe.dog.1msapp.com", "echo.1ms.dog", "stun.1ms.dog", "echo.dog.1msapp.com"]) assert.ok(!js.includes(host), "app.js: " + host);
+  assertHostsAllowed(js, "app.js");
 });
 
 test("checkup embed: only from the host's <meta name=check>, messages to that origin alone, a compact layout", async () => {

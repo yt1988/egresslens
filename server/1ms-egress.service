@@ -1,14 +1,14 @@
 # /etc/systemd/system/1ms-egress.service on the 1ms.dog VPS (ports, user and directory: 1ms-shell docs/processes.md)
 [Unit]
-Description=stun.1ms.dog and echo.1ms.dog: STUN and HTTPS echo for egress.1ms.dog
+Description=STUN and HTTPS echo for EgressLens
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 ExecStart=/opt/1ms/egress/egress-echo -cert ${CREDENTIALS_DIRECTORY}/fullchain.pem -key ${CREDENTIALS_DIRECTORY}/privkey.pem
 # issued by Public's certbot; Public restarts this service after each renewal
-LoadCredential=fullchain.pem:/etc/letsencrypt/live/echo.1ms.dog/fullchain.pem
-LoadCredential=privkey.pem:/etc/letsencrypt/live/echo.1ms.dog/privkey.pem
+LoadCredential=fullchain.pem:/etc/letsencrypt/live/<your-domain>/fullchain.pem
+LoadCredential=privkey.pem:/etc/letsencrypt/live/<your-domain>/privkey.pem
 User=1ms-egress
 Group=1ms-egress
 Environment=GOMEMLIMIT=40MiB

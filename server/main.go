@@ -1,10 +1,10 @@
-// egress-echo: the 1ms.dog server side of EgressLens (stun.1ms.dog, echo.1ms.dog).
+// egress-echo: the server side of EgressLens.
 //
 // The browser can't open raw sockets, so the page asks this one Tokyo address over several protocols and ports
 // and compares what it sees: the destination stays fixed, so a difference comes from the visitor's proxy rules.
 //
 //   - STUN Binding (RFC 5389) on UDP ports: answers with the address:port the request came from (XOR-MAPPED-ADDRESS).
-//     A browser reaches it through WebRTC (iceServers stun:stun.1ms.dog:<port>).
+//     A browser reaches it through WebRTC (iceServers stun:<host>:<port>).
 //   - HTTPS on TCP ports: GET / answers {"ip","port","proto"} for the connection, readable from any origin.
 //   - WebSocket on /ws (one TLS port): greets with {"v":1,"pop":"NRT"}, then echoes text frames, for round-trip timing.
 //   - MS_AUTH_SECRET set: the HTTPS routes and /ws require the token the page carries (see auth.go); unset, nothing is
