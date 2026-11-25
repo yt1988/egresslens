@@ -60,10 +60,14 @@ ul { list-style: none; margin: 0; padding: 0; }
 .ips a.ipq { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--muted); }
 .ips a.ipq:hover { border-bottom-style: solid; }
 /* the checkpoints that saw this exit: a wrapping line of names, so an unexpected exit can be traced to its source */
-.seen { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
-/* who saw this exit (this site's Cloudflare view, destinations in China, abroad) and how many exits there are */
-.who { font-size: 12px; color: var(--muted); }
-.more { font-size: 12px; color: var(--muted); margin-top: -6px; }
+/* the checkpoints that saw this exit, grouped by the vantage they saw it from; tags, not a run of names with 、 */
+.seen { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+.seen-h { color: var(--muted); }
+.tagg { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; }
+.tagk { font-size: 11px; color: var(--muted); }
+/* a checkpoint: an outlined tag that recedes; this site's own servers get a filled one, so they stand apart */
+.tag { font-size: 11.5px; line-height: 17px; padding: 0 5px; border-radius: 5px; border: 1px solid var(--line); color: var(--muted); background: transparent; overflow-wrap: anywhere; }
+.tag.own { color: var(--fg); background: var(--soft); border-color: transparent; }
 /* an iCloud Private Relay exit: still a proxy, but named for what it is */
 .relay { font-size: 12px; color: var(--muted); }
 .flag { width: 20px; height: 15px; border-radius: 3px; box-shadow: 0 0 0 1px var(--line); object-fit: cover; flex: none; }
@@ -242,8 +246,21 @@ svg.xi { width: .95em; height: .95em; flex: none; }
 /* a result link that can't be read: the line that says so, and the button to test your own */
 :root[data-bad-link] .hero-b, :root[data-bad-link] .probes, :root[data-bad-link] #share { display: none; }
 
-/* the verdict, once there is a result, with the share button beside it */
-.verdict { display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
-.verdict b { font-size: 16px; font-weight: 650; line-height: 1.35; }
-.verdict.bad b { color: var(--bad); }
+/* the verdict: one conclusion line with a colored dot, the exit count under it, the actions beside it */
+.verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 16px; row-gap: 2px; }
+.v-main { grid-column: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.v-main b { font-size: 17px; font-weight: 600; line-height: 1.35; }
+.v-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+.verdict[data-v="leak"] .v-dot, .verdict[data-v="ai"] .v-dot { background: var(--bad); }
+.verdict[data-v="direct"] .v-dot { background: var(--t1); }
+.verdict[data-v="split"] .v-dot { background: var(--ink); }
+.verdict[data-v="proxy"] .v-dot, .verdict[data-v="unknown"] .v-dot { background: var(--warn); }
+.verdict.bad .v-main b { color: var(--bad); }
+.more { grid-column: 1; padding-left: 18px; margin: 0; font-size: 12px; color: var(--muted); }
+.v-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 620px) {
+  .verdict { grid-template-columns: 1fr; }
+  .v-acts { grid-row: auto; grid-column: 1; justify-content: flex-start; }
+  .more { padding-left: 0; }
+}
 :root[data-ms-embed] .verdict { display: none !important; }

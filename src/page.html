@@ -39,8 +39,11 @@
         <h1 data-i="h1"></h1>
         <p class="intro">{{intro}} {{checkLink}}</p>
       </div>
-      <div class="verdict" id="verdict" hidden><b id="vTxt"></b><button class="mini" id="rpAsk" type="button" data-i="rp_entry" hidden></button><button class="btn" id="share" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10V2M5 4.5 8 1.5l3 3M3.5 8v5.5h9V8"/></svg><span data-i="share"></span></button></div>
-      <p class="more" id="exitN" hidden></p>
+      <div class="verdict" id="verdict" hidden>
+        <div class="v-main"><span class="v-dot" aria-hidden="true"></span><b id="vTxt"></b></div>
+        <p class="more" id="exitN" hidden></p>
+        <div class="v-acts"><button class="mini" id="rpAsk" type="button" data-i="rp_entry" hidden></button><button class="btn" id="share" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 10V2M5 4.5 8 1.5l3 3M3.5 8v5.5h9V8"/></svg><span data-i="share"></span></button></div>
+      </div>
       {{focus}}
       <div class="hero-b">
         <div class="col exits-col">

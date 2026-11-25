@@ -198,30 +198,40 @@
   const EXT = '<svg class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
   const asRef = n => ASN ? `<a class="asl" href="${esc(toolHref(ASN, "AS" + n))}" title="${esc(t("asn_title"))}" target="_blank" rel="noopener">AS${n}</a>` : "AS" + n;
   const ipQ = ip => IPQS && !masked() ? `<a class="ipq" href="${esc(IPQS)}/?ip=${encodeURIComponent(ip)}" title="${esc(t("ipq_title"))}" target="_blank" rel="noopener">${esc(ip)}</a>` : esc(ipTxt(ip));
-  // Who saw this exit: the page's own host (Cloudflare's view), destinations in mainland China, destinations abroad.
-  // A visitor comparing this page with another tool needs that line before the names.
+  // The checkpoints that saw this exit, grouped by the vantage they saw it from: this site (Cloudflare), destinations
+  // in mainland China, destinations abroad. Each is a small tag, not a run of text with separators; this site's own
+  // servers collapse to one tag per protocol with the ports that saw this exit, instead of nine "本站（东京） TCP …".
   const V_ORDER = ["cf", "cn", "intl"];
-  const whoSaw = e => {
-    const ids = new Set(e.probes || []);
-    const got = new Set(PROBES.filter(p => ids.has(p.id)).map(vantageOf));
-    return V_ORDER.filter(k => got.has(k)).map(k => t("v_" + k));
+  const portTags = (list, label) => ["TCP", "UDP"].map(kind => {
+    const ports = list.filter(p => String(p.name || "").startsWith(kind + " ")).map(p => +String(p.name).slice(4)).filter(n => n > 0);
+    return ports.length ? label + " " + kind + " " + [...new Set(ports)].sort((a, b) => a - b).join("/") : "";
+  }).filter(Boolean);
+  const seenRows = e => {
+    const ids = new Set(e.probes || []), by = {};
+    for (const p of PROBES) if (ids.has(p.id)) (by[vantageOf(p)] = by[vantageOf(p)] || []).push(p);
+    return V_ORDER.filter(k => by[k]).map(k => {
+      const list = by[k], chips = [];
+      for (const [g, label] of [["own", t("name_tokyo")], ["owncn", t("name_anchor_cn")]]) chips.push(...portTags(list.filter(p => p.g === g), label).map(text => ({ text, own: true })));
+      chips.push(...list.filter(p => p.g !== "own" && p.g !== "owncn" && !p.self).map(p => NAME_OF(p.id))
+        .filter((n, i, a) => n && a.indexOf(n) === i).map(text => ({ text })));
+      // the Cloudflare vantage is named by its own label; no separate tag for "this site" there
+      return { k, label: t("v_" + k), chips };
+    }).filter(r => r.chips.length || r.k === "cf");
   };
-  // which checkpoints saw an exit, under the names the page shows them by: the answer to "where does this exit come
-  // from". In the page's own order, each name once (two anchors share one name, a stack host shows its family).
-  const seenNames = e => {
-    const ids = new Set(e.probes || []);
-    return PROBES.filter(p => ids.has(p.id)).map(p => NAME_OF(p.id)).filter((n, i, a) => n && a.indexOf(n) === i).join(t("join"));
+  const seenBlock = e => {
+    const rows = seenRows(e);
+    if (!rows.length) return "";
+    return `<div class="seen"><span class="seen-h">${esc(t("ex_seen"))}</span>` +
+      rows.map(r => `<div class="tagg"><span class="tagk">${esc(r.label)}</span>${r.chips.map(c => `<span class="tag${c.own ? " own" : ""}">${esc(c.text)}</span>`).join("")}</div>`).join("") + `</div>`;
   };
   const exCard = e => {
     // a shared result has no addresses: only which IP versions the exit has
     const ips = [4, 6].map(f => [f, e.ips.filter(ip => fam(ip) === f)]).map(([f, l]) => l.length ? `<span><em>IPv${f}</em>${l.map(ipQ).join(" · ")}</span>`
       : S.shared && e["v" + f] ? `<span><em>IPv${f}</em>•••</span>` : "").join("");
-    const seen = seenNames(e);
     return `<li class="ex">${chip(e.letter, true)}<div class="ex-b">` +
       `<div class="where">${flag(e.cc)}<b>${esc(whereOf(e))}</b>${e.org || e.asn ? `<span class="m">${esc(e.org)}${e.asn ? (e.org ? " · " : "") + asRef(e.asn) : ""}</span>` : ""}</div>` +
       `<div class="ips">${ips}</div>` + (e.relay ? `<div class="relay">${esc(t("ex_relay"))}</div>` : "") +
-      (whoSaw(e).length ? `<div class="who">${whoSaw(e).map(esc).join(" · ")}</div>` : "") +
-      (seen ? `<div class="m seen">${esc(t("ex_seen"))}${esc(t("colon"))}${esc(seen)}</div>` : "") +
+      seenBlock(e) +
       (tunOf(e) ? `<div class="m tun">${esc(t("ex_tun", { n: tunOf(e) }))}</div>` : "") + `</div></li>`;
   };
   // the MSS 1ms.dog's TCP 443 read, when this exit carried that connection and the MSS suggests a tunnel
@@ -510,6 +520,7 @@
     if (!on) return;
     $("#vTxt").textContent = t("vh_" + v);
     $("#verdict").classList.toggle("bad", v === "leak" || v === "ai");
+    $("#verdict").dataset.v = v;
   }
 
   /* ---------- share: the shared dialog (/assets/share/, copied verbatim from 1ms-shell), a link that carries the result ---------- */
