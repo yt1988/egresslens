@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry, vantageOf, ownEndpoints, ownUrl, runnableProbes } from "../src/lib.mjs";
+import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry, vantageOf, ownEndpoints, ownUrl, runnableProbes, fetchWithAuth, authedRead } from "../src/lib.mjs";
 import { PROBES, GROUPS } from "../src/probes.mjs";
 import { isRelayIp } from "../src/relay.mjs";
 
@@ -98,6 +98,42 @@ function scenario() {
   }
   return { seen, ok };
 }
+
+
+test("endpoint tokens: our probes carry the page's token, a 401 renews once, none without it", async () => {
+  const seen = [];
+  const record = res => async (url, opts) => { seen.push((opts && opts.headers && opts.headers.Authorization) || ""); return res; };
+  // our endpoints take the token; other services never see it
+  assert.equal(authedRead("conn"), true);
+  assert.equal(authedRead("echo"), true);
+  await fetchWithAuth(record({ status: 200 }), "/x", {}, { read: "echo", token: "T" });
+  assert.deepEqual(seen, ["Bearer T"]);
+  seen.length = 0;
+  await fetchWithAuth(record({ status: 200 }), "/x", {}, { read: "text", token: "T" });
+  assert.deepEqual(seen, [""]);
+  // no meta: nothing to send
+  seen.length = 0;
+  await fetchWithAuth(record({ status: 200 }), "/x", {}, { read: "conn", token: "" });
+  assert.deepEqual(seen, [""]);
+  // 401: one fresh token, one retry; a second 401 is the answer
+  seen.length = 0;
+  let renews = 0;
+  const renew = async () => { renews++; return "fresh"; };
+  const ok = await fetchWithAuth(async (url, opts) => { seen.push((opts && opts.headers && opts.headers.Authorization) || ""); return { status: seen.length === 2 ? 200 : 401 }; }, "/x", {}, { read: "echo", token: "old", renew });
+  assert.equal(ok.status, 200);
+  assert.equal(renews, 1);
+  assert.deepEqual(seen, ["Bearer old", "Bearer fresh"]);
+  seen.length = 0; renews = 0;
+  const bad = await fetchWithAuth(async (url, opts) => { seen.push((opts && opts.headers && opts.headers.Authorization) || ""); return { status: 401 }; }, "/x", {}, { read: "echo", token: "old", renew });
+  assert.equal(bad.status, 401);
+  assert.equal(renews, 1);
+  assert.deepEqual(seen, ["Bearer old", "Bearer fresh"]);
+  // a token that never reaches the server (an endpoint without the preflight): one headerless attempt
+  seen.length = 0;
+  const fallback = await fetchWithAuth(async (url, opts) => { const a = (opts && opts.headers && opts.headers.Authorization) || ""; seen.push(a); if (a) throw new TypeError("cors"); return { status: 200 }; }, "/x", {}, { read: "conn", token: "T" });
+  assert.equal(fallback.status, 200);
+  assert.deepEqual(seen, ["Bearer T", ""]);
+});
 
 test("vantage: who saw an answer", () => {
   assert.equal(vantageOf({ self: 1 }), "cf");

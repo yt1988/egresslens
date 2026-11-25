@@ -81,9 +81,24 @@
   // A probe that gives no address says why, as { why, n }: "timeout", "http" (n = status), "net" (no connection:
   // blocked by the network, the proxy or an ad blocker), "parse" (an answer without a usable address), "stun".
   const fail = (why, n) => Object.assign(new Error(why), { why, n });
+  // The host's token for our own endpoints, refreshed once on a 401 (src/lib.mjs fetchWithAuth)
+  const authToken = () => { const m = document.querySelector('meta[name="ms-auth"]'); return (m && m.getAttribute("content")) || ""; };
+  let renewing = null;
+  const renewToken = () => renewing || (renewing = fetch("/_ms/token", { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(4000) })
+    .then(r => r.ok ? r.json() : null)
+    .then(j => {
+      const token = j && typeof j.token === "string" ? j.token : "";
+      if (token) {
+        let m = document.querySelector('meta[name="ms-auth"]');
+        if (!m) { m = document.createElement("meta"); m.name = "ms-auth"; document.head.appendChild(m); }
+        m.setAttribute("content", token);
+      }
+      return token;
+    })
+    .catch(() => "").finally(() => { renewing = null; }));
   async function httpProbe(p) {
     let r;
-    try { r = await fetch(bust(p.url), { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: AbortSignal.timeout(7000) }); }
+    try { r = await fetchWithAuth(fetch, bust(p.url), { cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: AbortSignal.timeout(7000) }, { read: p.read, token: authToken(), renew: renewToken }); }
     catch (e) { throw fail(e && e.name === "TimeoutError" ? "timeout" : "net"); }
     // this site without the 1ms.dog shell: its Cloudflare trace, if it has one
     if (p.self && r.status === 404) return httpProbe({ ...p, url: "/cdn-cgi/trace", read: "trace", self: 0 });

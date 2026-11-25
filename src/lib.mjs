@@ -110,6 +110,30 @@ export function ownUrl(p, E = ownEndpoints()) {
 // the probes the page can run: those that need nothing injected, and those whose endpoint is there
 export const runnableProbes = (probes, E) => probes.filter(p => !p.need || !!ownUrl(p, E));
 
+/* ---------- endpoint tokens (deploy data come from the host) ---------- */
+// Our own endpoints — the anchors' /conn and the echo ports — accept the page's short-lived token, which the host puts
+// in <meta name="ms-auth"> (1ms.dog tool contract, endpoint authentication). A 401 asks the host for a fresh token once
+// and retries once. An endpoint that predates the preflight can only answer a request without the header, so a token
+// that never reaches the server falls back to one headerless attempt (the rollout path; a no-op once every server has
+// the preflight).
+export const authedRead = read => read === "conn" || read === "echo";
+export async function fetchWithAuth(fetchImpl, url, opts, { read = "", token = "", renew } = {}) {
+  const ours = authedRead(read);
+  const send = t => fetchImpl(url, ours && t ? { ...opts, headers: { ...(opts && opts.headers), Authorization: `Bearer ${t}` } } : opts);
+  let res;
+  try {
+    res = await send(ours ? token : "");
+  } catch (e) {
+    if (!ours || !token) throw e;
+    return send("");
+  }
+  if (ours && res.status === 401) {
+    const fresh = renew ? await renew() : "";
+    if (fresh) res = await send(fresh);
+  }
+  return res;
+}
+
 /* ---------- exits ---------- */
 // Which of this site's own vantage points saw a probe's answer — this site (Cloudflare's view of the connection), our
 // Shanghai server, our Tokyo server — or another checkpoint, which is named by itself and not sorted by country
