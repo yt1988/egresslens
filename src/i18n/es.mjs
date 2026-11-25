@@ -51,7 +51,7 @@ export default {
   v_port_noudp: "TCP por {a}; UDP no pasa (bloqueado, o WebRTC desactivado en tu navegador)",
   v_port_udp: "Solo pasa UDP, por {b}; ningún puerto TCP conecta",
   ex_tun: "Posible túnel (MSS {n})",
-  ex_seen: "Lo vieron",
+  ex_seen_n: "Lo vieron {n} puntos de prueba",
   ex_relay: "Relay privado de iCloud: Apple eligió esta salida y esta ubicación por ti; ninguna es tu propia línea.",
   hide: "Ocultar IP",
   show: "Mostrar IP",

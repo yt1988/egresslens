@@ -61,8 +61,10 @@ ul { list-style: none; margin: 0; padding: 0; }
 .ips a.ipq:hover { border-bottom-style: solid; }
 /* the checkpoints that saw this exit: a wrapping line of names, so an unexpected exit can be traced to its source */
 /* the checkpoints that saw this exit, grouped by the vantage they saw it from; tags, not a run of names with 、 */
-.seen { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
-.seen-h { color: var(--muted); }
+.seen { font-size: 12px; color: var(--muted); }
+.seen summary { cursor: pointer; list-style-position: inside; }
+.seen summary:hover { color: var(--fg); }
+.seen-b { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
 .tagg { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; }
 .tagk { font-size: 11px; color: var(--muted); }
 /* a checkpoint: an outlined tag that recedes; this site's own servers get a filled one, so they stand apart */
@@ -249,18 +251,23 @@ svg.xi { width: .95em; height: .95em; flex: none; }
 /* the verdict: one conclusion line with a colored dot, the exit count under it, the actions beside it */
 .verdict { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 16px; row-gap: 2px; }
 .v-main { grid-column: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
-.v-main b { font-size: 17px; font-weight: 600; line-height: 1.35; }
+.v-main b { font-size: 17px; font-weight: 600; line-height: 1.35; min-width: 0; }
+/* the verdict and its count are reserved before the result is in: a late conclusion paints into the space, not over it */
+.v-main { min-height: 23px; }
+.v-skel { display: inline-block; width: 240px; max-width: 60vw; height: 14px; border-radius: 4px; background: var(--soft); animation: blink 1.4s ease-in-out infinite; }
+#share:disabled { opacity: .5; cursor: default; }
 .v-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
 .verdict[data-v="leak"] .v-dot, .verdict[data-v="ai"] .v-dot { background: var(--bad); }
 .verdict[data-v="direct"] .v-dot { background: var(--t1); }
 .verdict[data-v="split"] .v-dot { background: var(--ink); }
 .verdict[data-v="proxy"] .v-dot, .verdict[data-v="unknown"] .v-dot { background: var(--warn); }
 .verdict.bad .v-main b { color: var(--bad); }
-.more { grid-column: 1; padding-left: 18px; margin: 0; font-size: 12px; color: var(--muted); }
+.more { grid-column: 1; padding-left: 18px; margin: 0; font-size: 12px; line-height: 15px; min-height: 15px; color: var(--muted); }
 .v-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 @media (max-width: 620px) {
   .verdict { grid-template-columns: 1fr; }
   .v-acts { grid-row: auto; grid-column: 1; justify-content: flex-start; }
   .more { padding-left: 0; }
+  .v-main { min-height: 46px; align-items: flex-start; }
 }
 :root[data-ms-embed] .verdict { display: none !important; }

@@ -218,11 +218,13 @@
       return { k, label: t("v_" + k), chips };
     }).filter(r => r.chips.length || r.k === "cf");
   };
+  // A one-line summary stays in the card from the first paint (its height does not depend on the answers); the tags
+  // open on demand, so a late, growing text block never becomes the largest thing on screen (#144).
   const seenBlock = e => {
     const rows = seenRows(e);
     if (!rows.length) return "";
-    return `<div class="seen"><span class="seen-h">${esc(t("ex_seen"))}</span>` +
-      rows.map(r => `<div class="tagg"><span class="tagk">${esc(r.label)}</span>${r.chips.map(c => `<span class="tag${c.own ? " own" : ""}">${esc(c.text)}</span>`).join("")}</div>`).join("") + `</div>`;
+    return `<details class="seen"><summary>${esc(t("ex_seen_n", { n: new Set(e.probes || []).size }))}</summary><div class="seen-b">` +
+      rows.map(r => `<div class="tagg"><span class="tagk">${esc(r.label)}</span>${r.chips.map(c => `<span class="tag${c.own ? " own" : ""}">${esc(c.text)}</span>`).join("")}</div>`).join("") + `</div></details>`;
   };
   const exCard = e => {
     // a shared result has no addresses: only which IP versions the exit has
@@ -513,14 +515,27 @@
   // the result's one-line verdict under the headline, the share button beside it; hidden until there is a result
   function renderVerdict() {
     const on = S.done && S.exits.length > 0, v = on && verdict();
-    $("#verdict").hidden = !on;
+    const box = $("#verdict"), more = $("#exitN"), share = $("#share");
+    // a run in progress keeps the block (and its space) on screen with a skeleton line: the conclusion is painted at
+    // the end, and reserving its height is what keeps that from moving everything below it (#144, CLS)
+    const running = !S.done && (S.gen > 0 || S.shared);
+    box.hidden = !(on || running);
+    if (box.hidden) return;
+    if (running) {
+      $("#vTxt").innerHTML = '<span class="v-skel"></span>';
+      delete box.dataset.v;
+      box.classList.remove("bad");
+      more.textContent = "";
+      share.disabled = true;
+      return;
+    }
     // the count of exits found, for a visitor who sees one number here and another on a sibling tool
-    const more = $("#exitN"), many = on && S.exits.length > 1;
-    if (more) { more.hidden = !many; if (many) more.textContent = t("more_exits", { n: S.exits.length }); }
-    if (!on) return;
+    const many = S.exits.length > 1;
     $("#vTxt").textContent = t("vh_" + v);
-    $("#verdict").classList.toggle("bad", v === "leak" || v === "ai");
-    $("#verdict").dataset.v = v;
+    more.textContent = many ? t("more_exits", { n: S.exits.length }) : "";
+    share.disabled = false;
+    box.classList.toggle("bad", v === "leak" || v === "ai");
+    box.dataset.v = v;
   }
 
   /* ---------- share: the shared dialog (/assets/share/, copied verbatim from 1ms-shell), a link that carries the result ---------- */
@@ -732,6 +747,7 @@
   else if (/^#r=/.test(location.hash) && !EMBED) {
     // a result link that is cut short or from a format this page doesn't know: say so, and test only when asked
     S.badLink = true; document.documentElement.setAttribute("data-bad-link", "");
+    $("#verdict").hidden = true;
     $("#sharedTxt").textContent = t("bad_link");
     $("#run span").textContent = t("test_mine"); $("#run").disabled = false;
   }
