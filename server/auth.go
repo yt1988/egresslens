@@ -2,15 +2,15 @@
 // token a page carries, or the long-lived service token; anything else is 401. With MS_AUTH_SECRET unset nothing is
 // checked: that is the self-hosted default and the switch that rolls the check out service by service.
 //
-// A token is "v1.<exp seconds>.<nonce>.<hmac>", HMAC-SHA256 over "v1|exp|nonce|scope", where scope is the comma list of
-// capabilities it was signed for. This server needs "echo"; the service token uses "*". The four-part token does not
-// name its scope, so it is checked against the scopes this server accepts; a five-part token
-// ("v1.<exp>.<nonce>.<scope>.<hmac>") carries the scope and is checked against it.
+// A token is "v1.<exp seconds>.<nonce>.<scope>.<hmac>": the scope (a comma list of capabilities) is signed over
+// "v1|exp|nonce|scope" and travels in the token, and the HMAC is base64url without padding. This server needs "echo",
+// which the service token's "*" also covers.
 package main
 
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"io"
 	"net/http"
@@ -36,9 +36,6 @@ func newAuth(secret string) auth {
 
 func (a auth) enabled() bool { return len(a.keys) > 0 }
 
-// scopes accepted when the token does not carry its own
-func (a auth) scopes() []string { return []string{"echo", "*"} }
-
 // token reads the bearer header, or ?token= for a WebSocket handshake (which cannot set headers).
 func (a auth) token(r *http.Request) string {
 	if h := r.Header.Get("Authorization"); strings.HasPrefix(h, "Bearer ") {
@@ -50,9 +47,10 @@ func (a auth) token(r *http.Request) string {
 func (a auth) sign(key []byte, msg string) string {
 	m := hmac.New(sha256.New, key)
 	m.Write([]byte(msg))
-	return hex.EncodeToString(m.Sum(nil))
+	return base64.RawURLEncoding.EncodeToString(m.Sum(nil))
 }
 
+// scopeHas: the capability is in the token's list ("*" covers every capability, for the service token)
 func scopeHas(list, want string) bool {
 	for _, s := range strings.Split(list, ",") {
 		s = strings.TrimSpace(s)
@@ -73,23 +71,21 @@ func (a auth) check(r *http.Request) string {
 		return "no_token"
 	}
 	parts := strings.Split(tok, ".")
-	if (len(parts) != 4 && len(parts) != 5) || parts[0] != "v1" {
+	if len(parts) != 5 || parts[0] != "v1" {
 		return "bad_token"
 	}
 	exp, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil || time.Now().Unix() >= exp {
 		return "bad_token"
 	}
-	nonce, mac, scopes := parts[2], parts[3], a.scopes()
-	if len(parts) == 5 {
-		scopes, mac = []string{parts[3]}, parts[4]
-	}
-	msg := "v1|" + parts[1] + "|" + nonce + "|"
+	nonce, scope, mac := parts[2], parts[3], parts[4]
+	msg := "v1|" + parts[1] + "|" + nonce + "|" + scope
 	for _, key := range a.keys {
-		for _, s := range scopes {
-			if scopeHas(s, "echo") && hmac.Equal([]byte(a.sign(key, msg+s)), []byte(mac)) {
+		if hmac.Equal([]byte(a.sign(key, msg)), []byte(mac)) {
+			if scopeHas(scope, "echo") {
 				return ""
 			}
+			return "bad_token"
 		}
 	}
 	return "bad_token"

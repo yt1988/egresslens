@@ -13,8 +13,9 @@ ports, so a different exit can only come from the visitor's proxy rules. Ports, 
 Nothing is logged or stored; errors only. Without a certificate the HTTPS ports stay off and STUN still runs.
 
 **Endpoint tokens (optional).** With `MS_AUTH_SECRET` set in the environment, every HTTPS route and `/ws` requires the
-short-lived token a page carries — `Authorization: Bearer v1.<exp>.<nonce>.<hmac>`, or `?token=` on a WebSocket
-handshake — and answers 401 with `no_token` or `bad_token` otherwise. Unset means nothing is checked, which is the
+short-lived token a page carries — `Authorization: Bearer v1.<exp>.<nonce>.<scope>.<hmac>`, or `?token=` on a
+WebSocket handshake — and answers 401 with `no_token` or `bad_token` otherwise. The HMAC is SHA-256 over
+`v1|exp|nonce|scope` in base64url without padding, and the scope list must contain `echo` (or `*`). Unset means nothing is checked, which is the
 self-hosted default. The secret lives in the environment only. STUN has no authentication of its own.
 
 Each change here on main publishes a ready-made linux/amd64 build to a GitHub Release (latest:

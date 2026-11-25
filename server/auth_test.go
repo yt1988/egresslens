@@ -16,15 +16,8 @@ func authServer(secret string) *httptest.Server {
 	return httptest.NewServer(newAuth(secret).wrap(ok))
 }
 
-// signed builds the four-part token the contract specifies: v1.<exp>.<nonce>.<hmac>
+// signed builds the token the contract specifies: v1.<exp>.<nonce>.<scope>.<hmac>
 func signed(secret, scope string, exp int64) string {
-	a := newAuth(secret)
-	e := strconv.FormatInt(exp, 10)
-	return "v1." + e + ".nonce123." + a.sign(a.keys[0], "v1|"+e+"|nonce123|"+scope)
-}
-
-// scoped builds a five-part token that carries its scope: v1.<exp>.<nonce>.<scope>.<hmac>
-func scoped(secret, scope string, exp int64) string {
 	a := newAuth(secret)
 	e := strconv.FormatInt(exp, 10)
 	return "v1." + e + ".nonce123." + scope + "." + a.sign(a.keys[0], "v1|"+e+"|nonce123|"+scope)
@@ -75,11 +68,12 @@ func TestAuthTokens(t *testing.T) {
 		{"no token", "", "", 401, "no_token"},
 		{"garbage", "nope", "", 401, "bad_token"},
 		{"expired", signed(secret, "echo", past), "", 401, "bad_token"},
-		{"another scope", signed(secret, "probe", future), "", 401, "bad_token"},
-		{"scope in the token, not ours", scoped(secret, "probe,reach", future), "", 401, "bad_token"},
+		{"another scope", signed(secret, "probe,reach", future), "", 401, "bad_token"},
 		{"page token", signed(secret, "echo", future), "", 200, ""},
+		{"scope list in the token", signed(secret, "probe,echo,ipv6", future), "", 200, ""},
 		{"service token", signed(secret, "*", future), "", 200, ""},
-		{"scope list in the token", scoped(secret, "probe,echo,ipv6", future), "", 200, ""},
+		{"four parts, the old shape", "v1." + strconv.FormatInt(future, 10) + ".nonce123.abc", "", 401, "bad_token"},
+		{"tampered signature", signed(secret, "echo", future)[:len(signed(secret, "echo", future))-2] + "xx", "", 401, "bad_token"},
 		{"query, for /ws", "", signed(secret, "echo", future), 200, ""},
 	} {
 		url := srv.URL + "/"
@@ -121,7 +115,7 @@ func TestAuthHexSecret(t *testing.T) {
 		t.Fatal(err)
 	}
 	e := strconv.FormatInt(time.Now().Add(time.Minute).Unix(), 10)
-	tok := "v1." + e + ".n." + a.sign(key, "v1|"+e+"|n|echo")
+	tok := "v1." + e + ".n.echo." + a.sign(key, "v1|"+e+"|n|echo")
 	srv := authServer(hexSecret)
 	defer srv.Close()
 	if code, body := get(t, srv.URL, tok); code != http.StatusOK {
