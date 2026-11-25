@@ -201,30 +201,30 @@
   // The checkpoints that saw this exit, grouped by who saw it: this site (Cloudflare), our Shanghai server, our Tokyo
   // server, or other checkpoints (named by themselves). Our own servers collapse to one tag per protocol with the
   // ports that saw this exit, instead of nine "本站（东京） TCP …". No group is a claim about the visitor's country.
-  const V_ORDER = ["cf", "sh", "tyo", "other"];
   const portTags = (list, label) => ["TCP", "UDP"].map(kind => {
     const ports = list.filter(p => String(p.name || "").startsWith(kind + " ")).map(p => +String(p.name).slice(4)).filter(n => n > 0);
     return ports.length ? label + " " + kind + " " + [...new Set(ports)].sort((a, b) => a - b).join("/") : "";
   }).filter(Boolean);
+  // Two groups: this site's own vantage points together (Cloudflare, Shanghai, Tokyo) and every other checkpoint by
+  // name. The list is drawn open; the tags are small and the count line above it does not change height as answers come.
   const seenRows = e => {
-    const ids = new Set(e.probes || []), by = {};
-    for (const p of PROBES) if (ids.has(p.id)) (by[vantageOf(p)] = by[vantageOf(p)] || []).push(p);
-    return V_ORDER.filter(k => by[k]).map(k => {
-      const list = by[k], chips = [];
-      for (const [g, label] of [["own", t("name_tokyo")], ["owncn", t("name_anchor_cn")]]) chips.push(...portTags(list.filter(p => p.g === g), label).map(text => ({ text, own: true })));
-      chips.push(...list.filter(p => p.g !== "own" && p.g !== "owncn" && !p.self).map(p => NAME_OF(p.id))
-        .filter((n, i, a) => n && a.indexOf(n) === i).map(text => ({ text })));
-      // the Cloudflare vantage is named by its own label; no separate tag for "this site" there
-      return { k, label: t("v_" + k), chips };
-    }).filter(r => r.chips.length || r.k === "cf");
+    const ids = new Set(e.probes || []), own = [], other = [];
+    for (const p of PROBES) if (ids.has(p.id)) (vantageOf(p) === "other" ? other : own).push(p);
+    const chips = [];
+    if (own.some(p => p.self)) chips.push({ text: "Cloudflare", own: true });
+    if (own.some(p => p.anchor === "cn")) chips.push({ text: t("loc_sh"), own: true });
+    for (const [g, city] of [["owncn", t("loc_sh")], ["own", t("loc_tyo")]]) chips.push(...portTags(own.filter(p => p.g === g), city).map(text => ({ text, own: true })));
+    const names = other.map(p => NAME_OF(p.id)).filter((n, i, a) => n && a.indexOf(n) === i);
+    return [
+      { label: t("v_own"), chips },
+      { label: t("v_other"), chips: names.map(text => ({ text })) },
+    ].filter(r => r.chips.length);
   };
-  // A one-line summary stays in the card from the first paint (its height does not depend on the answers); the tags
-  // open on demand, so a late, growing text block never becomes the largest thing on screen (#144).
   const seenBlock = e => {
     const rows = seenRows(e);
     if (!rows.length) return "";
-    return `<details class="seen"><summary>${esc(t("ex_seen_n", { n: new Set(e.probes || []).size }))}</summary><div class="seen-b">` +
-      rows.map(r => `<div class="tagg"><span class="tagk">${esc(r.label)}</span>${r.chips.map(c => `<span class="tag${c.own ? " own" : ""}">${esc(c.text)}</span>`).join("")}</div>`).join("") + `</div></details>`;
+    return `<div class="seen"><span class="seen-h">${esc(t("ex_seen_n", { n: new Set(e.probes || []).size }))}</span>` +
+      rows.map(r => `<div class="tagg"><span class="tagk">${esc(r.label)}</span>${r.chips.map(c => `<span class="tag${c.own ? " own" : ""}">${esc(c.text)}</span>`).join("")}</div>`).join("") + `</div>`;
   };
   const exCard = e => {
     // a shared result has no addresses: only which IP versions the exit has

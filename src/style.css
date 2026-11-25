@@ -61,10 +61,8 @@ ul { list-style: none; margin: 0; padding: 0; }
 .ips a.ipq:hover { border-bottom-style: solid; }
 /* the checkpoints that saw this exit: a wrapping line of names, so an unexpected exit can be traced to its source */
 /* the checkpoints that saw this exit, grouped by the vantage they saw it from; tags, not a run of names with 、 */
-.seen { font-size: 12px; color: var(--muted); }
-.seen summary { cursor: pointer; list-style-position: inside; }
-.seen summary:hover { color: var(--fg); }
-.seen-b { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.seen { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+.seen-h { color: var(--muted); }
 .tagg { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; }
 .tagk { font-size: 11px; color: var(--muted); }
 /* a checkpoint: an outlined tag that recedes; this site's own servers get a filled one, so they stand apart */
