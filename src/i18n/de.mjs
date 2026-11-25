@@ -19,8 +19,9 @@ export default {
   r_port: "Ports und Protokolle",
   v_none: "–",
   v_cf: "Von dieser Seite (Cloudflare) gesehen",
-  v_cn: "Von Zielen in Festlandchina gesehen",
-  v_intl: "Von Zielen im Ausland gesehen",
+  v_sh: "Von Shanghai aus gesehen",
+  v_tyo: "Von Tokio aus gesehen",
+  v_other: "Von anderen Prüfpunkten gesehen",
   v_route_one: "Alles über {a}",
   v_route_split: "China-Websites über {a}, der Rest über {b}",
   v_except_none: "Keine",
@@ -87,13 +88,13 @@ export default {
   g_udp: "WebRTC (UDP)",
   g_own: "Diese Seite (Tokio): TCP- und UDP-Ports",
   g_owncn: "Diese Seite (Shanghai): TCP- und UDP-Ports",
-  g_owncn_note: "Jeder Besucher überquert eine Grenze zu dieser Maschine: Lies die Werte neben der Tokio-Gruppe; es sind Werte der grenzüberschreitenden Strecke, nicht die Geschwindigkeit in China; ein Port ohne Antwort ist einfach nicht erreichbar.",
+  g_owncn_note: "Jeder Besucher überquert eine Grenze zu dieser Maschine: Lies die Werte neben der Tokio-Gruppe; es sind Werte der grenzüberschreitenden Strecke, nicht die Geschwindigkeit in Festlandchina; ein Port ohne Antwort ist einfach nicht erreichbar.",
 
 
   faq_h: "Häufige Fragen",
   close: "Schließen",
   faq: [
-    ["Warum sehen Websites unterschiedliche IPs?", "Weil dein Proxy den Verkehr nach Regeln aufteilt. Proxy- und VPN-Apps mit Regeln (Clash, Surge, Shadowrocket, sing-box usw.) wählen die Route nach dem Ziel: chinesische Websites direkt, KI-Dienste über einen Server, alles andere über einen anderen. Ein Test, der nur eine Website fragt, sieht deshalb nur eine dieser Routen. Diese Seite fragt Dutzende Stellen gleichzeitig und fasst die Antworten nach Netz zusammen."],
+    ["Warum sehen Websites unterschiedliche IPs?", "Weil dein Proxy den Verkehr nach Regeln aufteilt. Proxy- und VPN-Apps mit Regeln (Clash, Surge, Shadowrocket, sing-box usw.) wählen die Route nach dem Ziel: Websites in deinem Land direkt, KI-Dienste über einen Server, alles andere über einen anderen. Ein Test, der nur eine Website fragt, sieht deshalb nur eine dieser Routen. Diese Seite fragt Dutzende Stellen gleichzeitig und fasst die Antworten nach Netz zusammen."],
     ["Woher weiß die Seite, welche IP ChatGPT oder Claude sieht?", "Über eine öffentliche Adresse von Cloudflare. ChatGPT, Claude und viele andere Websites laufen hinter Cloudflare. Cloudflare beantwortet /cdn-cgi/trace auf ihrer eigenen Domain mit der IP, die sich verbunden hat, und jede Seite darf das auslesen. Dein Browser verbindet sich wie gewohnt mit chatgpt.com, über die Route, die deine Regeln wählen, und liest die IP zurück, die chatgpt.com gesehen hat."],
     ["Was ist ein WebRTC-Leck?", "Ein Weg, den dein Proxy nicht abdeckt und über den deine echte IP nach außen dringen kann. WebRTC nutzt der Browser für Videoanrufe. Es fragt einen STUN-Server über UDP nach deiner öffentlichen IP. Viele Proxys leiten nur TCP weiter, deshalb geht diese UDP-Anfrage über deine eigene Leitung raus, und jede Website kann die Antwort ohne Nachfrage lesen. Sieht ein STUN-Server deine lokale IP, während Websites den Proxy sehen, meldet die Seite ein Leck. Abhilfe: UDP-Weiterleitung oder TUN-Modus in deiner Proxy-App einschalten, oder WebRTC mit einer Browser-Erweiterung einschränken."],
     ["Was ist ein IPv6-Leck?", "Wenn dein Proxy nur IPv4 übernimmt, deine Leitung aber auch IPv6 hat, können IPv6-Verbindungen am Proxy vorbeigehen. Die Nur-IPv6-Prüfpunkte zeigen, über welchen Ausgang dein IPv6-Verkehr wirklich läuft. Bei einem Leck: IPv6 ebenfalls über den Proxy leiten, oder IPv6 auf dem Gerät oder Router ausschalten."],

@@ -22,7 +22,7 @@
 
 | 分组 | 内容 |
 |---|---|
-| 国内网站 | IPIP.NET、爱奇艺、ipify.cn、DNSPod（IPv4 和 IPv6），以及本站自己放在国内的锚点：分流规则通常让它们直连 |
+| 中国大陆网站 | IPIP.NET、爱奇艺、ipify.cn、DNSPod（IPv4 和 IPv6），以及本站自己放在中国大陆的锚点：分流规则通常让它们直连 |
 | IP 查询服务 | 本站（1ms.dog shell 的 `/_ms/me`，即 Cloudflare 看到的这次连接；自行部署时用 `/cdn-cgi/trace`）、IP.SB、ipinfo.io、ipapi.co、ipwho.is、GeoJS、ipleak.net、ident.me、ip.guide、icanhazip、BigDataCloud |
 | AI 服务 | ChatGPT、OpenAI、Sora、Claude、Anthropic、Grok、Perplexity、Copilot、Mistral、Poe、Character.AI、DeepL |
 | 常用网站 | Cloudflare、1.1.1.1、GitLab、npm、Notion、Linear、Zoom、Medium、Coinbase、Crunchyroll、Patreon、Shopify |
@@ -32,9 +32,9 @@
 
 AI 服务和常用网站读取的是各站点自己域名上的 Cloudflare `/cdn-cgi/trace`：它返回连接过来的地址，并带 `Access-Control-Allow-Origin: *`。所以页面能看到在你的规则下，chatgpt.com、claude.ai 实际看到的是哪个出口。
 
-两个锚点是任何分流清单都不会列出的目的地，一个在国内、一个在东京：它们看到的是代理规则没有选过的那条路，所以能分清「国内和境外走了不同的路」还是「只有一条路」。锚点只说明一个出口走的是哪条路；这条路上是直连还是代理，看的是地址的归属。
+两个锚点是任何分流清单都不会列出的目的地，一个在上海、一个在东京：它们看到的是代理规则没有选过的那条路，所以能分清「国内和境外走了不同的路」还是「只有一条路」。锚点只说明一个出口走的是哪条路；这条路上是直连还是代理，看的是地址的归属。
 
-页面据此给出结论：国内外分流、单独走一条线路的服务、WebRTC 泄露（网站看到代理，UDP 却从自己的线路出去）、NAT 类型（锥形或对称，用一个连接同时问所有 STUN 服务器得出）、按端口或协议分流（TCP 走代理、UDP 直连）、MSS 偏小时的隧道提示、IPv6 泄露、时区与出口国家不一致，以及 Cloudflare WARP。出口地址落在 Apple 公布的 iCloud 专用代理段里时，页面会标明是 iCloud 专用代理：这是 Apple 的代理路径，不是访客自己的代理，它显示的位置是 Apple 替访客选的替代位置。
+页面据此给出结论：中国大陆与境外的分流、单独走一条线路的服务、WebRTC 泄露（网站看到代理，UDP 却从自己的线路出去）、NAT 类型（锥形或对称，用一个连接同时问所有 STUN 服务器得出）、按端口或协议分流（TCP 走代理、UDP 直连）、MSS 偏小时的隧道提示、IPv6 泄露、时区与出口国家不一致，以及 Cloudflare WARP。出口地址落在 Apple 公布的 iCloud 专用代理段里时，页面会标明是 iCloud 专用代理：这是 Apple 的代理路径，不是访客自己的代理，它显示的位置是 Apple 替访客选的替代位置。
 
 **隐私：** 网站只有静态文件。浏览器直接连接每个探测器，结果不会发给本站。本站自己的检测点（`/_ms/me`、两个锚点和东京服务器）只回传看到的地址，不记录。截图前可以用“隐藏 IP”遮住地址。
 
@@ -53,7 +53,7 @@ npx wrangler deploy        # 纯静态资源 Worker：没有脚本，免费且�
 
 **本站自己的测量端点**（两个锚点和按端口测量的服务器）是部署数据，不写进仓库：站点把 `<meta name="ms-anchors">` 和 `<meta name="ms-egress">` 写进每个 HTML 页面（在 1ms.dog 上由 shell 给所有工具页注入；自行部署时可以自己把这两个标签加进 `src/page.html`）：
 
-- `ms-anchors` 的内容 = `cn=<基址>;intl=<基址>`：国内、境外两个锚点，页面在后面拼 `/conn`；已经带 `/conn` 的值原样使用。
+- `ms-anchors` 的内容 = `cn=<基址>;intl=<基址>`：上海、东京两个锚点，页面在后面拼 `/conn`；已经带 `/conn` 的值原样使用。
 - `ms-egress` 的内容 = `stun=<主机>:<端口>,…;echo=<基址>[,<基址>]`：按端口测量的服务器；`echo` 按服务器顺序给出（第一个显示为东京、第二个为国内），STUN 主机按最后两段域名自动归到对应的服务器。端口列表仍在 `src/probes.mjs` 里。
 
 没有这两个标签时，页面把这些探测去掉，只用公开服务，并在页面上说明；不会退回第三方。

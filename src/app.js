@@ -198,10 +198,10 @@
   const EXT = '<svg class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
   const asRef = n => ASN ? `<a class="asl" href="${esc(toolHref(ASN, "AS" + n))}" title="${esc(t("asn_title"))}" target="_blank" rel="noopener">AS${n}</a>` : "AS" + n;
   const ipQ = ip => IPQS && !masked() ? `<a class="ipq" href="${esc(IPQS)}/?ip=${encodeURIComponent(ip)}" title="${esc(t("ipq_title"))}" target="_blank" rel="noopener">${esc(ip)}</a>` : esc(ipTxt(ip));
-  // The checkpoints that saw this exit, grouped by the vantage they saw it from: this site (Cloudflare), destinations
-  // in mainland China, destinations abroad. Each is a small tag, not a run of text with separators; this site's own
-  // servers collapse to one tag per protocol with the ports that saw this exit, instead of nine "本站（东京） TCP …".
-  const V_ORDER = ["cf", "cn", "intl"];
+  // The checkpoints that saw this exit, grouped by who saw it: this site (Cloudflare), our Shanghai server, our Tokyo
+  // server, or other checkpoints (named by themselves). Our own servers collapse to one tag per protocol with the
+  // ports that saw this exit, instead of nine "本站（东京） TCP …". No group is a claim about the visitor's country.
+  const V_ORDER = ["cf", "sh", "tyo", "other"];
   const portTags = (list, label) => ["TCP", "UDP"].map(kind => {
     const ports = list.filter(p => String(p.name || "").startsWith(kind + " ")).map(p => +String(p.name).slice(4)).filter(n => n > 0);
     return ports.length ? label + " " + kind + " " + [...new Set(ports)].sort((a, b) => a - b).join("/") : "";

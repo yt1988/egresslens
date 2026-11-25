@@ -113,7 +113,7 @@ export async function build({ check = false } = {}) {
       `<span class="pip">–</span><span class="pl"></span><span class="pco"></span><span class="pms"></span></li>`;
     // only: a landing page lists just the groups it tests
     // a group carries what a reader needs under its heading: who saw these answers, and how to read the numbers
-    const NOTE = { own: ["v_intl"], owncn: ["v_cn", "g_owncn_note"] };
+    const NOTE = { own: ["v_tyo"], owncn: ["v_sh", "g_owncn_note"] };
     const groupsOf = (first, only) => [first, ...GROUPS.filter(g => g !== first)].filter(g => g && (!only || only.includes(g)))
       .map(g => `<div class="pg" data-g="${g}"${g === "own" || g === "owncn" ? " hidden" : ""}><h3>${esc(T("g_" + g))}<b class="pg-n"></b></h3>` +
         (NOTE[g] || []).map(k => `<p class="pg-note">${esc(T(k))}</p>`).join("") + `<ul>${PROBES.filter(p => p.g === g).map(row).join("")}</ul></div>`).join("\n");

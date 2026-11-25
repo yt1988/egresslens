@@ -19,8 +19,9 @@ export default {
   r_port: "Puertos y protocolos",
   v_none: "–",
   v_cf: "Visto por este sitio (Cloudflare)",
-  v_cn: "Visto por destinos en China continental",
-  v_intl: "Visto por destinos en el extranjero",
+  v_sh: "Visto desde Shanghái",
+  v_tyo: "Visto desde Tokio",
+  v_other: "Visto por otros puntos de prueba",
   v_route_one: "Todo sale por {a}",
   v_route_split: "Sitios de China por {a}, el resto por {b}",
   v_except_none: "Ninguna",
@@ -87,13 +88,13 @@ export default {
   g_udp: "WebRTC (UDP)",
   g_own: "Este sitio (Tokio): puertos TCP y UDP",
   g_owncn: "Este sitio (Shanghái): puertos TCP y UDP",
-  g_owncn_note: "Todo visitante cruza una frontera para llegar a esta máquina, así que léelo junto al grupo de Tokio: son lecturas del tramo transfronterizo, no la velocidad dentro de China; un puerto que no responde simplemente no conecta.",
+  g_owncn_note: "Todo visitante cruza una frontera para llegar a esta máquina, así que léelo junto al grupo de Tokio: son lecturas del tramo transfronterizo, no la velocidad dentro de China continental; un puerto que no responde simplemente no conecta.",
 
 
   faq_h: "Preguntas frecuentes",
   close: "Cerrar",
   faq: [
-    ["¿Por qué cada sitio ve una IP distinta?", "Porque tu proxy reparte el tráfico según reglas. Las apps de proxy y VPN con reglas (Clash, Surge, Shadowrocket, sing-box…) eligen la ruta según el destino: los sitios de China van directos, los servicios de IA por un servidor y el resto por otro. Por eso, una prueba que consulta un solo sitio solo ve una de esas rutas. Esta página consulta decenas de puntos a la vez y agrupa las respuestas por red."],
+    ["¿Por qué cada sitio ve una IP distinta?", "Porque tu proxy reparte el tráfico según reglas. Las apps de proxy y VPN con reglas (Clash, Surge, Shadowrocket, sing-box…) eligen la ruta según el destino: los sitios de tu país van directos, los servicios de IA por un servidor y el resto por otro. Por eso, una prueba que consulta un solo sitio solo ve una de esas rutas. Esta página consulta decenas de puntos a la vez y agrupa las respuestas por red."],
     ["¿Cómo sabe qué IP ven ChatGPT o Claude?", "Gracias a una dirección pública que ofrece Cloudflare. ChatGPT, Claude y muchos otros sitios están detrás de Cloudflare, que responde en /cdn-cgi/trace de su propio dominio con la IP que se conectó, y permite que cualquier página la lea. Tu navegador se conecta a chatgpt.com como siempre, por la ruta que eligen tus reglas, y lee la IP que vio chatgpt.com."],
     ["¿Qué es una fuga de WebRTC?", "Un camino que tu proxy no cubre y por el que se puede escapar tu IP real. WebRTC es lo que usa el navegador para las videollamadas: pregunta tu IP pública a un servidor STUN por UDP. Muchos proxies solo llevan TCP, así que esa petición UDP sale por tu propia línea, y cualquier página puede leer la respuesta sin pedirte permiso. Si un servidor STUN ve tu IP local mientras los sitios ven el proxy, la página marca una fuga. Para cerrarla, activa el reenvío UDP o el modo TUN en tu app de proxy, o limita WebRTC con una extensión del navegador."],
     ["¿Qué es una fuga de IPv6?", "Si tu proxy solo gestiona IPv4 pero tu línea también tiene IPv6, las conexiones por IPv6 pueden saltarse el proxy. Los puntos de prueba solo IPv6 muestran por qué salida va realmente tu tráfico IPv6. Si hay fuga, haz que el proxy gestione también IPv6, o desactiva IPv6 en tu dispositivo o router."],

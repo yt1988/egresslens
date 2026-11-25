@@ -101,14 +101,15 @@ function scenario() {
 
 test("vantage: who saw an answer", () => {
   assert.equal(vantageOf({ self: 1 }), "cf");
-  assert.equal(vantageOf({ g: "cn" }), "cn");
-  assert.equal(vantageOf({ g: "owncn" }), "cn");
-  assert.equal(vantageOf({ g: "own" }), "intl");
-  assert.equal(vantageOf({ g: "ai" }), "intl");
-  // the STUN servers: Xiaomi, Bilibili and Mango TV are in mainland China, the others abroad
-  assert.equal(vantageOf({ id: "stun-mi", g: "udp" }), "cn");
-  assert.equal(vantageOf({ id: "stun-bili", g: "udp" }), "cn");
-  assert.equal(vantageOf({ id: "stun-cf", g: "udp" }), "intl");
+  // our own servers are named by city
+  assert.equal(vantageOf({ g: "cn", anchor: "cn" }), "sh");
+  assert.equal(vantageOf({ g: "owncn" }), "sh");
+  assert.equal(vantageOf({ g: "own" }), "tyo");
+  assert.equal(vantageOf({ g: "own", anchor: "intl" }), "tyo");
+  // another checkpoint is named by itself, not sorted by country (T0)
+  assert.equal(vantageOf({ g: "cn" }), "other");
+  assert.equal(vantageOf({ g: "ai" }), "other");
+  assert.equal(vantageOf({ id: "stun-mi", g: "udp" }), "other");
 });
 
 test("exits: grouped by network, direct first, labeled D/P, from the shared core", () => {

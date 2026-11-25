@@ -21,8 +21,9 @@ export default {
   r_port: "Ports and protocols",
   v_none: "–",
   v_cf: "Seen by this site (Cloudflare)",
-  v_cn: "Seen by destinations in mainland China",
-  v_intl: "Seen by destinations abroad",
+  v_sh: "Seen from Shanghai",
+  v_tyo: "Seen from Tokyo",
+  v_other: "Seen by other checkpoints",
   v_route_one: "Everything goes via {a}",
   v_route_split: "Sites in China via {a}, the rest via {b}",
   v_except_none: "None",
@@ -89,13 +90,13 @@ export default {
   g_udp: "WebRTC (UDP)",
   g_own: "This site (Tokyo): TCP and UDP ports",
   g_owncn: "This site (Shanghai): TCP and UDP ports",
-  g_owncn_note: "Every visitor crosses a border to reach this machine, so read it next to the Tokyo group: these are cross-border readings, not domestic speed; a port that doesn't answer is simply unreachable.",
+  g_owncn_note: "Every visitor crosses a border to reach this machine, so read it next to the Tokyo group: these are cross-border readings, not the speed inside mainland China; a port that doesn't answer is simply unreachable.",
 
 
   faq_h: "Questions",
   close: "Close",
   faq: [
-    ["Why do different sites see different IPs?", "Because your proxy splits traffic by rules. Proxy and VPN apps with rules (Clash, Surge, Shadowrocket, sing-box and the like) pick a route by destination: sites in China go direct, AI services through one server, everything else through another. So a check that asks one site only sees one of those routes. This page asks dozens of places at once and groups the answers by network."],
+    ["Why do different sites see different IPs?", "Because your proxy splits traffic by rules. Proxy and VPN apps with rules (Clash, Surge, Shadowrocket, sing-box and the like) pick a route by destination: sites in your country go direct, AI services through one server, everything else through another. So a check that asks one site only sees one of those routes. This page asks dozens of places at once and groups the answers by network."],
     ["How does it know what ChatGPT or Claude sees?", "Through a public address Cloudflare provides. ChatGPT, Claude and many other sites sit behind Cloudflare, which answers /cdn-cgi/trace on their own domain with the IP that connected, and lets any page read it. Your browser connects to chatgpt.com as usual, through whatever route your rules pick, and reads back the IP chatgpt.com saw."],
     ["What is a WebRTC leak?", "A path your proxy doesn't cover, where your real IP can slip out. WebRTC is what browsers use for video calls. It asks a STUN server for your public IP over UDP. Many proxies only carry TCP, so this UDP request leaves through your own line, and any web page can read the answer without a prompt. If a STUN server sees your local IP while websites see the proxy, this page reports a leak. To close it, turn on UDP forwarding or TUN mode in your proxy app, or limit WebRTC with a browser extension."],
     ["What is an IPv6 leak?", "If your proxy only handles IPv4 but your line also has IPv6, connections over IPv6 can go around the proxy. The IPv6-only checkpoints show which exit your IPv6 traffic really takes. If it leaks, let the proxy handle IPv6 too, or turn IPv6 off on your device or router."],
