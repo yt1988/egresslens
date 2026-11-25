@@ -46,17 +46,17 @@ AI 服务和常用网站读取的是各站点自己域名上的 Cloudflare `/cdn
 git clone https://github.com/yt1988/egresslens
 cd egresslens
 npx wrangler login
-npx wrangler deploy        # 静态资源 + 一个小 Worker，把本站自己的测量端点从 MS_* 注入页面
+npx wrangler deploy        # 纯静态资源 Worker：没有脚本，免费且不计请求数
 ```
 
 `wrangler.toml` 关闭了 `*.workers.dev` 和预览地址。在 **Workers & Pages → egress → Settings → Domains & Routes** 绑定自己的域名，或临时设 `workers_dev = true` 测试。任何静态托管都可以，`public/_headers` 是 Cloudflare 格式的安全响应头。WARP 检测读取的是页面所在域名的 `/cdn-cgi/trace`，只在 Cloudflare 后面有效。
 
-**本站自己的测量端点**（两个锚点和按端口测量的服务器）是部署数据，不写进仓库：Worker 从 `MS_ANCHORS`、`MS_EGRESS` 读取，写进每个 HTML 页面的 `<meta name="ms-anchors">` 和 `<meta name="ms-egress">`（用 `npx wrangler secret put MS_ANCHORS` 设置，`[vars]` 也可以）：
+**本站自己的测量端点**（两个锚点和按端口测量的服务器）是部署数据，不写进仓库：站点把 `<meta name="ms-anchors">` 和 `<meta name="ms-egress">` 写进每个 HTML 页面（在 1ms.dog 上由 shell 给所有工具页注入；自行部署时可以自己把这两个标签加进 `src/page.html`）：
 
-- `MS_ANCHORS` = `cn=<基址>;intl=<基址>`：国内、境外两个锚点，页面在后面拼 `/conn`。
-- `MS_EGRESS` = `stun=<主机>:<端口>,…;echo=<基址>[,<基址>]`：按端口测量的服务器；`echo` 按服务器顺序给出（第一个显示为东京、第二个为国内），STUN 主机按最后两段域名自动归到对应的服务器。端口列表仍在 `src/probes.mjs` 里。
+- `ms-anchors` 的内容 = `cn=<基址>;intl=<基址>`：国内、境外两个锚点，页面在后面拼 `/conn`。
+- `ms-egress` 的内容 = `stun=<主机>:<端口>,…;echo=<基址>[,<基址>]`：按端口测量的服务器；`echo` 按服务器顺序给出（第一个显示为东京、第二个为国内），STUN 主机按最后两段域名自动归到对应的服务器。端口列表仍在 `src/probes.mjs` 里。
 
-没有这两个变量时，页面把这些探测去掉，只用公开服务，并在页面上说明；不会退回第三方。
+没有这两个标签时，页面把这些探测去掉，只用公开服务，并在页面上说明；不会退回第三方。
 
 在 1ms.dog 上，页面还可以嵌在线路体检（check.1ms.dog）里运行：带 `?embed=checkup` 打开、且来源是宿主在 `<meta name="check">` 里写明的地址时，只显示出口和检测结论（简介后面那个指向体检的链接也不显示），立即开始，并把进度和结果回传给那个地址。没有这个 meta（比如自行部署）时忽略 `?embed`。
 

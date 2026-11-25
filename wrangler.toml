@@ -1,17 +1,10 @@
-# Cloudflare Workers with static assets: `npx wrangler deploy` uploads ./public and src/worker.js.
-# HTML pages pass through the Worker (run_worker_first) so it can add <meta> tags with this site's own measurement
-# points from MS_ANCHORS / MS_EGRESS; everything else is a static asset request, free and not metered. Without those
-# environment values the page asks only the public services — a self-hosted copy works as it is.
+# Cloudflare Workers with static assets: `npx wrangler deploy` uploads ./public.
+# There is no Worker script, so every request is a static asset request (free and not metered).
 # No routes or custom domain here: bind your own domain in the dashboard (see README).
-# The domain must be proxied by Cloudflare: the WARP check reads this host's own /cdn-cgi/trace.
 name = "egress"
-main = "src/worker.js"
 compatibility_date = "2025-10-01"
 workers_dev = false
 preview_urls = false
 
 [assets]
 directory = "./public"
-binding = "ASSETS"   # the Worker reads a page to add the endpoint metas
-# every HTML page is a directory URL (/, /zh-cn/, /chatgpt-ip/, /r/leak/, …); assets keep being served directly
-run_worker_first = ["/", "/*/"]

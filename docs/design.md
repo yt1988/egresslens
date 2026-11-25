@@ -83,8 +83,8 @@ every UDP port went direct, which no other probe could have shown.
 - The new STUN ports count for the WebRTC leak and the NAT type too: same IP on another port is the cleanest test of a
   port-dependent mapping.
 - **Where our own servers are is deploy data.** Their addresses arrive as `ms-anchors` / `ms-egress` `<meta>` tags
-  written by `src/worker.js` from the deployment's environment; the repository keeps the ports, the parser and the
-  placeholders. Without those values the page leaves those probes out (and says how many it runs) instead of falling
+  that the hosting site writes into the page (on 1ms.dog the shell does it for every tool page); the repository keeps
+  the ports, the parser and the placeholders. Without those values the page leaves those probes out (and says how many it runs) instead of falling
   back to another service, which is also the self-hosted path. The addresses are not advertising: a rule list that
   learned an anchor would route around it.
 - **A mainland server is not a domestic speed test.** If this site's own machine in mainland China is added as a port

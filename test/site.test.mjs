@@ -90,11 +90,6 @@ test("landing pages: their own words, canonical to themselves, every language li
 
 
 test("own probes wait for the injected endpoint metas", async () => {
-  const { endpointTags } = await import("../src/worker.js");
-  // the Worker writes the metas only when the deployment sets the environment: nothing set, nothing written
-  assert.deepEqual(endpointTags({}), []);
-  assert.deepEqual(endpointTags({ MS_ANCHORS: "cn=https://a;intl=https://b", MS_EGRESS: "echo=https://c" }),
-    [["ms-anchors", "cn=https://a;intl=https://b"], ["ms-egress", "echo=https://c"]]);
   // every page draws this site's own probes hidden, and carries no hostname for them; the app unhides what it got
   for (const [l, slug] of LANGS) {
     const h = await page(slug);
