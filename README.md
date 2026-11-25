@@ -48,10 +48,17 @@ From the answers the page reports split routing (mainland sites vs. abroad), ser
 git clone https://github.com/yt1988/egresslens
 cd egresslens
 npx wrangler login
-npx wrangler deploy        # a static-assets Worker: no script, free and unmetered
+npx wrangler deploy        # assets plus a small Worker that adds this site's own endpoints from MS_*
 ```
 
 `wrangler.toml` turns off `*.workers.dev` and preview URLs; bind your own domain under **Workers & Pages → egress → Settings → Domains & Routes**, or set `workers_dev = true` for a quick test. Any static host works; `public/_headers` holds the security headers in Cloudflare's format. The WARP check reads `/cdn-cgi/trace` on the page's own host, so it only works behind Cloudflare.
+
+**This site's own probes** (the two route anchors and the port-and-protocol servers) are deploy data, not repository content: the Worker writes them into each HTML page as `<meta name="ms-anchors">` and `<meta name="ms-egress">` from the `MS_ANCHORS` and `MS_EGRESS` variables (`npx wrangler secret put MS_ANCHORS`; a `[vars]` entry works too):
+
+- `MS_ANCHORS` = `cn=<base-url>;intl=<base-url>` — the mainland anchor and the one abroad; `/conn` is appended to each.
+- `MS_EGRESS` = `stun=<host>:<port>,…;echo=<base-url>[,<base-url>]` — the servers asked over several ports; the echo bases come in server order (the first is shown as Tokyo, the second as the mainland server), and a STUN host joins the server whose echo host shares its last two labels. The port lists stay in `src/probes.mjs`.
+
+Without these variables the page leaves those probes out, starts from the public services only and says so; nothing falls back to a third party.
 
 On 1ms.dog the page can also run inside the connection checkup (check.1ms.dog): opened with `?embed=checkup` from the origin the host names in `<meta name="check">`, it shows only the exits and the findings (not the link to the checkup that the intro carries once the host announces it), starts at once and posts its progress and result to that origin. Without that meta, as when self-hosted, `?embed` is ignored.
 

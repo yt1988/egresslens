@@ -80,9 +80,9 @@ export async function build({ check = false } = {}) {
   const lib = libRaw.replace(/^import \{[^}]*\} from "\.\/[\w.-]+";\n?/gm, "").replace(/^export /gm, "");
   const appSrc = await readFile(new URL("app.js", src), "utf8");
   if (!appSrc.includes("/* @lib */")) throw new Error("src/app.js has no /* @lib */ marker");
-  const probes = PROBES.map(({ id, g, name, nameKey, host, url, read, fam, self, anchor }) => ({ id, g, name, host, url, read, ...(nameKey ? { nameKey } : {}), ...(fam ? { fam } : {}), ...(self ? { self } : {}), ...(anchor ? { anchor } : {}) }));
+  const probes = PROBES.map(({ id, g, name, nameKey, host, url, read, fam, self, anchor, need, port }) => ({ id, g, name, host, url, read, ...(nameKey ? { nameKey } : {}), ...(fam ? { fam } : {}), ...(self ? { self } : {}), ...(anchor ? { anchor } : {}), ...(need ? { need } : {}), ...(need && port ? { port } : {}) }));
   // this site's own probes are shown by their role, never by their hostname: a rule list must not learn the anchors
-  const ownProbe = p => !!(p.self || p.anchor || p.g === "own" || p.g === "owncn");
+  const ownProbe = p => !!(p.self || p.anchor || p.need || p.g === "own" || p.g === "owncn");
   const appFull = `const PROBES = ${JSON.stringify(probes)}, GROUPS = ${JSON.stringify(GROUPS)};\n` + inline.join("\n") + `\nconst ${aliases.join(", ")};\n`
     + appSrc.replace("/* @lib */", () => lib);
   new Function(appFull);                                                // must parse
@@ -109,13 +109,13 @@ export async function build({ check = false } = {}) {
     // one line per probe: name (host on hover), the address it saw, the exit label, Cloudflare colo, time
     // this site's own probe is named in the page's language, at the site's address
     const nameOf = p => p.self ? T("self_name") : p.nameKey ? T(p.nameKey) : p.name, hostOf = p => p.self ? new URL(SITE).host : p.host;
-    const row = p => `<li class="pr" id="p-${p.id}"><span class="pn"${ownProbe(p) ? "" : ` title="${esc(hostOf(p))}"`}>${esc(nameOf(p))}${p.fam ? ` <span class="m">v${p.fam}</span>` : ""}</span>` +
+    const row = p => `<li class="pr" id="p-${p.id}"${p.need ? " hidden" : ""}><span class="pn"${ownProbe(p) ? "" : ` title="${esc(hostOf(p))}"`}>${esc(nameOf(p))}${p.fam ? ` <span class="m">v${p.fam}</span>` : ""}</span>` +
       `<span class="pip">–</span><span class="pl"></span><span class="pco"></span><span class="pms"></span></li>`;
     // only: a landing page lists just the groups it tests
     // a group carries what a reader needs under its heading: who saw these answers, and how to read the numbers
     const NOTE = { own: ["v_intl"], owncn: ["v_cn", "g_owncn_note"] };
     const groupsOf = (first, only) => [first, ...GROUPS.filter(g => g !== first)].filter(g => g && (!only || only.includes(g)))
-      .map(g => `<div class="pg" data-g="${g}"><h3>${esc(T("g_" + g))}<b class="pg-n"></b></h3>` +
+      .map(g => `<div class="pg" data-g="${g}"${g === "own" || g === "owncn" ? " hidden" : ""}><h3>${esc(T("g_" + g))}<b class="pg-n"></b></h3>` +
         (NOTE[g] || []).map(k => `<p class="pg-note">${esc(T(k))}</p>`).join("") + `<ul>${PROBES.filter(p => p.g === g).map(row).join("")}</ul></div>`).join("\n");
     // the check table's rows: label now, status and value once the probes are in
     const checks = CHECKS.map(r => `<li class="fr" data-r="${r}"><i class="st"></i><span class="fr-l">${esc(T("r_" + r))}</span><span class="fr-v"><span class="bar"></span></span></li>`).join("");

@@ -48,6 +48,23 @@
   // The browser's time zone → country from the shared core (src/egress.js), the site's one table.
   const tzCc = () => { try { return tzCountry(Intl.DateTimeFormat().resolvedOptions().timeZone) || ""; } catch (e) { return ""; } };
   const GROUP_OF = Object.fromEntries(PROBES.map(p => [p.id, p.read === "stun" ? "udp" : p.g]));
+  // This site's own measurement points come from the injected metas (docs/tool-contract.md §2). Their rows are drawn
+  // hidden by the build; the ones without an endpoint stay hidden and are not run, so a self-hosted copy asks only the
+  // public services. The ports stay in this repository; the metas say where the servers are.
+  const EP = ownEndpoints();
+  for (const p of PROBES) if (p.need) p.url = ownUrl(p, EP);
+  const RUNNABLE = runnableProbes(PROBES, EP);
+  for (const p of PROBES) { const row = document.getElementById("p-" + p.id); if (row) row.hidden = !!p.need && !p.url; }
+  for (const g of GROUPS) {
+    const el = document.querySelector(`[data-g="${g}"]`);
+    if (el) el.hidden = !PROBES.some(p => p.g === g && (!p.need || p.url));
+  }
+  // a self-hosted copy runs fewer probes: say so instead of the number the build printed
+  if (RUNNABLE.length !== PROBES.length) {
+    for (const el of document.querySelectorAll(".intro, .fo-all a")) {
+      if (el.firstChild && el.firstChild.nodeType === 3) el.firstChild.nodeValue = el.firstChild.nodeValue.replace(String(PROBES.length), String(RUNNABLE.length));
+    }
+  }
   // a name for a probe where its group heading is not next to it (findings, the seen-by list). This site's own probes
   // carry where they are, so "TCP 443" from Tokyo and from Shanghai are not one name.
   const NAME_OF = id => {
@@ -99,7 +116,7 @@
     if (!window.RTCPeerConnection) return [];
     let pc;
     try {
-      pc = new RTCPeerConnection({ iceServers: PROBES.filter(isStun).map(p => ({ urls: p.url })) });
+      pc = new RTCPeerConnection({ iceServers: RUNNABLE.filter(isStun).map(p => ({ urls: p.url })) });
       pc.createDataChannel("x");
       const out = [];
       const done = new Promise(res => {
@@ -218,7 +235,7 @@
   // While running, each probe group's heading in the list counts its answers.
   function renderGroups() {
     for (const g of GROUPS) {
-      const ids = PROBES.filter(p => p.g === g).map(p => p.id), d = ids.filter(id => S.ok[id] != null).length;
+      const ids = PROBES.filter(p => p.g === g && (!p.need || p.url)).map(p => p.id), d = ids.filter(id => S.ok[id] != null).length;
       const el = document.querySelector(`[data-g="${g}"] .pg-n`);
       if (el) el.textContent = S.gen ? `${d} / ${ids.length}` : "";
     }
@@ -370,7 +387,7 @@
   // A landing page tests only what it is about: its own probes, and the mainland and abroad baselines that tell the
   // direct exit from the proxy. (The abroad anchor lives in the Tokyo server group, which a landing page leaves out:
   // its route falls back to the majority of the probes abroad it does run.)
-  const RUNS = D.focus ? PROBES.filter(p => [D.focusGroup, "cn", "intl"].includes(p.g)) : PROBES;
+  const RUNS = D.focus ? RUNNABLE.filter(p => [D.focusGroup, "cn", "intl"].includes(p.g)) : RUNNABLE;
   async function run() {
     leaveShared();
     const gen = ++S.gen;
@@ -419,7 +436,7 @@
     if (gen !== S.gen) return;
     S.exits = groupExits(seenAll(), S.geo, GROUP_OF, S.warp, anchorsOf());
     const cf = Object.fromEntries(PROBES.map(p => [p.id, ((S.res[p.id] || [])[0] || {}).cf]).filter(([, c]) => c));
-    const seen = Object.fromEntries(PROBES.filter(isStun).map(p => [p.id, (S.res[p.id] || []).map(r => r.ip)]));
+    const seen = Object.fromEntries(RUNNABLE.filter(isStun).map(p => [p.id, (S.res[p.id] || []).map(r => r.ip)]));
     S.nat = natOf(await natP, seen, S.exits);
     if (gen !== S.gen) return;
     S.finds = findings(PROBES, S.exits, cf, tzCc(), S.nat);

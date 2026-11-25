@@ -82,6 +82,11 @@ every UDP port went direct, which no other probe could have shown.
   port; 4433–10443 for TCP. 53 and 443 are left alone: a DNS server and other probes may want them.
 - The new STUN ports count for the WebRTC leak and the NAT type too: same IP on another port is the cleanest test of a
   port-dependent mapping.
+- **Where our own servers are is deploy data.** Their addresses arrive as `ms-anchors` / `ms-egress` `<meta>` tags
+  written by `src/worker.js` from the deployment's environment; the repository keeps the ports, the parser and the
+  placeholders. Without those values the page leaves those probes out (and says how many it runs) instead of falling
+  back to another service, which is also the self-hosted path. The addresses are not advertising: a rule list that
+  learned an anchor would route around it.
 - **A mainland server is not a domestic speed test.** If this site's own machine in mainland China is added as a port
   group, every visitor's path to it is the one measured: a visitor abroad crosses a border to reach it, and even one in
   another province takes that province's route. The group and its row describe that route — its ports, its exit —

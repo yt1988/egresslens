@@ -88,6 +88,25 @@ test("landing pages: their own words, canonical to themselves, every language li
   }
 });
 
+
+test("own probes wait for the injected endpoint metas", async () => {
+  const { endpointTags } = await import("../src/worker.js");
+  // the Worker writes the metas only when the deployment sets the environment: nothing set, nothing written
+  assert.deepEqual(endpointTags({}), []);
+  assert.deepEqual(endpointTags({ MS_ANCHORS: "cn=https://a;intl=https://b", MS_EGRESS: "echo=https://c" }),
+    [["ms-anchors", "cn=https://a;intl=https://b"], ["ms-egress", "echo=https://c"]]);
+  // every page draws this site's own probes hidden, and carries no hostname for them; the app unhides what it got
+  for (const [l, slug] of LANGS) {
+    const h = await page(slug);
+    for (const id of ["acn", "t443", "u3478", "cnt4433", "cnu3478"]) assert.ok(h.includes(`id="p-${id}" hidden`), `${l}: ${id}`);
+    assert.match(h, /<div class="pg" data-g="own" hidden>/, l);
+    assert.match(h, /<div class="pg" data-g="owncn" hidden>/, l);
+    for (const host of ["probe.1ms.dog", "probe.dog.1msapp.com", "echo.1ms.dog", "stun.1ms.dog", "echo.dog.1msapp.com"]) assert.ok(!h.includes(host), `${l}: ${host}`);
+  }
+  const js = await readFile(new URL("../public/assets/" + /app\.[0-9a-f]+\.js/.exec(await page(""))[0], import.meta.url), "utf8");
+  for (const host of ["probe.1ms.dog", "probe.dog.1msapp.com", "echo.1ms.dog", "stun.1ms.dog", "echo.dog.1msapp.com"]) assert.ok(!js.includes(host), "app.js: " + host);
+});
+
 test("checkup embed: only from the host's <meta name=check>, messages to that origin alone, a compact layout", async () => {
   const src = await readFile(new URL("../src/app.js", import.meta.url), "utf8"), css = await readFile(new URL("../src/style.css", import.meta.url), "utf8");
   assert.match(src, /get\("embed"\) === "checkup" && !!at && from === at/);

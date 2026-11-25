@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry, vantageOf } from "../src/lib.mjs";
+import { readProbe, srflxOf, groupExits, exitOfProbe, findings, oddProbes, maskIp, parseTrace, sameNet, encodeShare, parseShare, verdictOf, natOf, srflxAt, tunneled, tzCountry, vantageOf, ownEndpoints, ownUrl, runnableProbes } from "../src/lib.mjs";
 import { PROBES, GROUPS } from "../src/probes.mjs";
 import { isRelayIp } from "../src/relay.mjs";
 
@@ -12,10 +12,44 @@ test("probes: unique ids, known groups and readers, https or stun", () => {
   for (const p of PROBES) {
     assert.ok(!ids.has(p.id), "duplicate " + p.id); ids.add(p.id);
     assert.ok(GROUPS.includes(p.g), p.id);
-    // this site's own probe asks the page's host, under the name the page gives it
-    assert.ok(p.self ? p.url === "/_ms/me" : p.read === "stun" ? p.url.startsWith("stun:") : p.url.startsWith("https://"), p.id);
-    assert.ok(p.self || (p.host && (p.name || p.nameKey)), p.id);
+    // a probe either carries its URL, asks the page's own host, or takes its endpoint from the injected meta
+    if (p.need) {
+      assert.equal(p.url, undefined, p.id + ": a need probe gets its URL at runtime");
+      assert.ok(["acn", "intl", "own.tcp", "own.udp", "owncn.tcp", "owncn.udp"].includes(p.need), p.id);
+      if (/\.(tcp|udp)$/.test(p.need)) assert.ok(p.port > 0, p.id + ": a port probe needs a port");
+    } else {
+      assert.ok(p.self ? p.url === "/_ms/me" : p.read === "stun" ? p.url.startsWith("stun:") : p.url.startsWith("https://"), p.id);
+      assert.ok(p.self || (p.host && (p.name || p.nameKey)), p.id);
+    }
+    assert.ok(p.self || p.name || p.nameKey, p.id);
   }
+});
+
+// the injected metas, as the page reads them (docs/tool-contract.md §2)
+const docOf = metas => ({ querySelector: sel => {
+  const name = /meta\[name="([^"]+)"\]/.exec(sel);
+  return name && metas[name[1]] != null ? { getAttribute: () => metas[name[1]] } : null;
+} });
+
+test("own endpoints: from the injected metas, and none without them", () => {
+  const E = ownEndpoints(docOf({
+    "ms-anchors": "cn=https://cn.test:9443;intl=https://intl.test",
+    "ms-egress": "stun=stun.intl.test:3478,cn.test:19302;echo=https://echo.intl.test:8443,https://cn.test:8443;ws=wss://echo.intl.test:8443/ws",
+  }));
+  assert.deepEqual(E, {
+    acn: "https://cn.test:9443/conn", intl: "https://intl.test/conn",
+    own: { tcp: "echo.intl.test", udp: "stun.intl.test" },
+    owncn: { tcp: "cn.test", udp: "cn.test" },
+  });
+  // a self-hosted copy: no metas, no own probes, and nothing invented
+  const none = ownEndpoints(docOf({}));
+  assert.deepEqual(none, { acn: "", intl: "", own: { tcp: "", udp: "" }, owncn: { tcp: "", udp: "" } });
+  const probes = [{ id: "acn", need: "acn" }, { id: "t443", need: "intl" }, { id: "t4433", need: "own.tcp", port: 4433 },
+    { id: "u3478", need: "own.udp", port: 3478 }, { id: "ipsb", url: "https://api.ip.sb/geoip" }];
+  assert.deepEqual(runnableProbes(probes, E).map(p => p.id), ["acn", "t443", "t4433", "u3478", "ipsb"]);
+  assert.deepEqual(runnableProbes(probes, none).map(p => p.id), ["ipsb"]);
+  assert.equal(ownUrl(probes[2], E), "https://echo.intl.test:4433/");
+  assert.equal(ownUrl(probes[3], E), "stun:stun.intl.test:3478");
 });
 
 test("readers", () => {

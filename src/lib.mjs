@@ -3,7 +3,7 @@
 //
 // Exit grouping and the direct/proxy/unknown reading come from the site-wide core in src/egress.js (vendored from
 // 1ms.dog; the rules are in its docs/egress-contract.md): this file only adapts its output to what the page shows.
-import { groupExits as coreExitGroups, kindOf as coreKind, pathOf as corePath, AI_BLOCKED as coreAIBlocked, tzCountry as coreTzCountry } from "./egress.js";
+import { groupExits as coreExitGroups, kindOf as coreKind, pathOf as corePath, AI_BLOCKED as coreAIBlocked, tzCountry as coreTzCountry, endpoints as coreEndpoints } from "./egress.js";
 import { isRelayIp as relayIp } from "./relay.mjs";
 
 /* ---------- addresses ---------- */
@@ -64,6 +64,48 @@ export const srflxAt = line => { const ip = srflxOf(line); return ip && { ip, po
 // A TCP MSS (the most data one packet carries) well under Ethernet's 1460 (1440 over IPv6), and under PPPoE's 1452,
 // leaves room for a tunnel's own header: a VPN, or an ISP tunnel (DS-Lite) or a mobile network with a small MTU.
 export const tunneled = (ip, mss) => !!mss && mss <= (fam(ip) === 6 ? 1380 : 1400);
+
+/* ---------- this site's own endpoints (deploy data) ---------- */
+// Where our own probes live is deployment data, not repository content (docs/tool-contract.md §2): the Worker puts
+// <meta name="ms-anchors" content="cn=<base>;intl=<base>"> and <meta name="ms-egress"
+// content="stun=<host>:<port>,…;echo=<base>[,<base>];ws=…"> into the head from its environment. A self-hosted copy
+// has neither, so the probes that need them are left out instead of falling back to anyone else's service.
+// The echo bases come in server order: the first is Tokyo (group own), the second the mainland server (owncn). A STUN
+// host joins the server whose echo host shares its last two labels (stun.<site> with echo.<site>; a host with itself).
+const httpBase = (value, path) => {
+  try {
+    const u = new URL(String(value || ""));
+    return /^https?:$/.test(u.protocol) && u.hostname ? u.href.replace(/\/+$/, "") + path : "";
+  } catch (e) { return ""; }
+};
+const hostOfUrl = value => {
+  try { const u = new URL(String(value || "")); return /^https?:$/.test(u.protocol) ? u.hostname : ""; } catch (e) { return ""; }
+};
+export function ownEndpoints(doc = globalThis.document) {
+  const A = coreEndpoints("ms-anchors", doc), E = coreEndpoints("ms-egress", doc);
+  const echoes = String(E.echo || "").split(",").map(x => hostOfUrl(x.trim())).filter(Boolean);
+  const stuns = [...new Set(String(E.stun || "").split(",").map(x => x.trim().replace(/:\d+$/, ""))
+    .filter(h => /^[a-z0-9.-]+$/i.test(h)))];
+  const site = h => h.split(".").slice(-2).join(".");
+  const stunFor = h => (h ? stuns.find(s => site(s) === site(h)) || "" : "");
+  return {
+    acn: httpBase(A.cn, "/conn"), intl: httpBase(A.intl, "/conn"),
+    own: { tcp: echoes[0] || "", udp: stunFor(echoes[0]) },
+    owncn: { tcp: echoes[1] || "", udp: stunFor(echoes[1]) },
+  };
+}
+// the URL a `need` probe fetches: its host from the deployment, its port from this repository
+export function ownUrl(p, E = ownEndpoints()) {
+  if (!p.need) return p.url || "";
+  if (p.need === "acn") return E.acn;
+  if (p.need === "intl") return E.intl;
+  const [group, kind] = String(p.need).split(".");
+  const host = E[group] && E[group][kind];
+  if (!host || !p.port) return "";
+  return kind === "tcp" ? `https://${host}:${p.port}/` : `stun:${host}:${p.port}`;
+}
+// the probes the page can run: those that need nothing injected, and those whose endpoint is there
+export const runnableProbes = (probes, E) => probes.filter(p => !p.need || !!ownUrl(p, E));
 
 /* ---------- exits ---------- */
 // Who saw a probe's answer: this site's own host (Cloudflare's view of the connection), a destination in mainland
