@@ -91,13 +91,28 @@ func (a auth) check(r *http.Request) string {
 	return "bad_token"
 }
 
+// cors mirrors the request's origin (or stars a request without one) and varies on it, so a cached answer can never
+// be handed to another origin.
+func cors(w http.ResponseWriter, r *http.Request) {
+	h := w.Header()
+	if o := r.Header.Get("Origin"); o != "" {
+		h.Set("Access-Control-Allow-Origin", o)
+		h.Set("Vary", "Origin")
+	} else {
+		h.Set("Access-Control-Allow-Origin", "*")
+	}
+}
+
 // wrap is the middleware around every route on an HTTPS echo port, /ws included. A CORS preflight passes without a
 // token: the page's GET carries an Authorization header, so the browser asks first.
+//
+// A 401 must carry the same CORS headers as a normal answer: without them a cross-origin fetch sees a network error
+// instead of the 401, and the page can never learn that its token needs renewing (the cross-service trap of 2026-11-25).
 func (a auth) wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodOptions {
+			cors(w, r)
 			h := w.Header()
-			h.Set("Access-Control-Allow-Origin", "*")
 			h.Set("Access-Control-Allow-Headers", "Authorization")
 			h.Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 			h.Set("Access-Control-Max-Age", "600")
@@ -105,9 +120,11 @@ func (a auth) wrap(next http.Handler) http.Handler {
 			return
 		}
 		if reason := a.check(r); reason != "" {
+			cors(w, r)
 			h := w.Header()
-			h.Set("Access-Control-Allow-Origin", "*")
+			h.Set("Timing-Allow-Origin", "*")
 			h.Set("Cache-Control", "no-store")
+			h.Set("X-Content-Type-Options", "nosniff")
 			h.Set("Content-Type", "text/plain; charset=utf-8")
 			w.WriteHeader(http.StatusUnauthorized)
 			io.WriteString(w, reason+"\n")

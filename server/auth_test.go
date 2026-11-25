@@ -100,9 +100,28 @@ func TestAuthPreflight(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer res.Body.Close()
-	if res.StatusCode != http.StatusNoContent || res.Header.Get("Access-Control-Allow-Origin") != "*" ||
+	if res.StatusCode != http.StatusNoContent || res.Header.Get("Access-Control-Allow-Origin") != "https://egress.1ms.dog" ||
+		!strings.Contains(res.Header.Get("Vary"), "Origin") ||
 		!strings.Contains(res.Header.Get("Access-Control-Allow-Headers"), "Authorization") {
 		t.Fatalf("preflight: %d %v", res.StatusCode, res.Header)
+	}
+}
+
+// A cross-origin 401 has to be readable as a 401: without the CORS headers the page sees only a network error and its
+// token renewal never runs (the trap dns found on 2026-11-25).
+func TestAuth401HasCORS(t *testing.T) {
+	srv := authServer("test-secret-not-a-real-key")
+	defer srv.Close()
+	req, _ := http.NewRequest(http.MethodGet, srv.URL+"/", nil)
+	req.Header.Set("Origin", "https://egress.1ms.dog")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusUnauthorized || res.Header.Get("Access-Control-Allow-Origin") != "https://egress.1ms.dog" ||
+		!strings.Contains(res.Header.Get("Vary"), "Origin") {
+		t.Fatalf("401 without CORS: %d %v", res.StatusCode, res.Header)
 	}
 }
 

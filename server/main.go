@@ -127,8 +127,8 @@ func answer(q []byte, from netip.AddrPort) []byte {
 func serve(port string, ws bool, cfg *tls.Config, authn auth) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		cors(w, r) // the same header (and Vary) the 401 and the preflight carry
 		h := w.Header()
-		h.Set("Access-Control-Allow-Origin", "*")
 		h.Set("Cache-Control", "no-store")
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
