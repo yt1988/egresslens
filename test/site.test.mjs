@@ -12,6 +12,8 @@ const page = async slug => readFile(new URL(`../public/${slug ? slug + "/" : ""}
 // links to. This site's measurement and service endpoints are not third parties, so none of them may appear.
 const ALLOWED_HOSTS = new Set([
   "egress.1ms.dog", "github.com", "schema.org",
+  // an SVG's namespace: a name, never fetched (Dark Reader serializes the icon and re-decodes it standalone)
+  "www.w3.org",
   ...PROBES.flatMap(p => (p.url && /^https?:/.test(p.url) ? [new URL(p.url).host] : [])),
 ]);
 const hostsIn = s => [...s.matchAll(/https?:\/\/([^/"'\s<>)]+)/g)].map(m => m[1].replace(/:\d+$/, ""));

@@ -210,7 +210,7 @@
   // an AS number links to its page on ASN Lookup
   // a link to another 1ms.dog tool ends in the external-link icon (the shared tool contract: no arrows); a value that is
   // itself the link (an address, an AS number) has no icon: a dotted underline, and a title saying where it goes
-  const EXT = '<svg class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
+  const EXT = '<svg xmlns="http://www.w3.org/2000/svg" class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
   const asRef = n => ASN ? `<a class="asl" href="${esc(toolHref(ASN, "AS" + n))}" title="${esc(t("asn_title"))}" target="_blank" rel="noopener">AS${n}</a>` : "AS" + n;
   const ipQ = ip => IPQS && !masked() ? `<a class="ipq" href="${esc(IPQS)}/?ip=${encodeURIComponent(ip)}" title="${esc(t("ipq_title"))}" target="_blank" rel="noopener">${esc(ip)}</a>` : esc(ipTxt(ip));
   // The checkpoints that saw this exit, grouped by who saw it: this site (Cloudflare), our Shanghai server, our Tokyo
