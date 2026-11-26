@@ -92,7 +92,7 @@ test("landing pages: their own words, canonical to themselves, every language li
       assert.match(h, new RegExp(`<link rel="canonical" href="https://egress\.1ms\.dog/${at.replace(/\//g, "\/")}">`), `${l} ${land.slug} canonical`);
       for (const [, s2] of LANGS) assert.ok(h.includes(`href="https://egress.1ms.dog/${s2 ? s2 + "/" : ""}${land.slug}/"`), `${l} ${land.slug} hreflang ${s2}`);
       assert.ok(h.includes(`data-focus="${land.id}"`), `${l} ${land.slug}: lead panel`);
-      if (land.id === "ai") assert.ok(h.includes(`data-m="home" data-at="chatgpt/"`) && h.includes(`>${I[l].lat_link}<svg class="xi"`), `${l}: link to the latency test`);
+      if (land.id === "ai") assert.ok(h.includes(`data-m="home" data-at="chatgpt/"`) && h.includes(`>${I[l].lat_link}<svg xmlns="http://www.w3.org/2000/svg" class="xi"`), `${l}: link to the latency test`);
       assert.match(h, /"@type":"FAQPage"/);
       assert.ok(sitemap.includes(`<loc>https://egress.1ms.dog/${at}</loc>`), `${at} in the sitemap`);
       await access(new URL(`../public/og/${l.toLowerCase()}/${land.slug}.png`, import.meta.url));

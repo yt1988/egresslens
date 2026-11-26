@@ -21,7 +21,7 @@ const SITE = (process.env.SITE_URL || "https://egress.1ms.dog").replace(/\/+$/, 
 const pub = new URL("../public/", import.meta.url), src = new URL("../src/", import.meta.url);
 // language, URL folder, og:locale, name in its own language; the first is the root
 // the external-link icon that ends a link to another 1ms.dog tool (the shared tool contract: no arrows)
-const EXT = '<svg class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
+const EXT = '<svg xmlns="http://www.w3.org/2000/svg" class="xi" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5h4.5V7M13.5 2.5 7.5 8.5M12 10v3.5H2.5V4H6"/></svg>';
 // Landing pages: the same tool with one check up front. id: its strings (lp_<id>, an object per language) and the
 // check-table row it leads with; group: the probe group listed first; skip: the main page's question it answers itself.
 // (The WebRTC leak test is who.1ms.dog's /webrtc-leak/; the 1ms.dog shell sends this tool's old /webrtc-leak/ there.)
