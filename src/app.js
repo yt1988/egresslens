@@ -479,19 +479,24 @@
   $("#run").onclick = () => { if ((S.shared || S.badLink) && location.pathname !== D.home[LANG]) location.href = D.home[LANG]; else run(); };
 
   /* ---------- a row's reason, on hover or focus ---------- */
-  const tip = document.body.appendChild(Object.assign(document.createElement("div"), { className: "tip", role: "tooltip" }));
+  // the bubble comes from the page markup (painted with the page, shrunk to nothing); hover only fills and shows it
+  const tip = document.getElementById("tip");
+  // painted with the page but hidden from assistive tech until it has something to say
+  const hideTip = () => { tip.classList.remove("on"); tip.setAttribute("aria-hidden", "true"); };
   const showTip = row => {
     tip.textContent = row.dataset.why;
+    tip.classList.remove("pre");
+    tip.removeAttribute("aria-hidden");
     const r = row.getBoundingClientRect(), w = Math.min(tip.offsetWidth, innerWidth - 16);
     tip.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + 120)) + "px"; tip.style.top = r.bottom + 4 + "px";
     tip.classList.add("on");
   };
   const list_ = $(".pgroups");
-  list_.addEventListener("mouseover", e => { const row = e.target.closest(".pr[data-why]"); row ? showTip(row) : tip.classList.remove("on"); });
-  list_.addEventListener("mouseleave", () => tip.classList.remove("on"));
+  list_.addEventListener("mouseover", e => { const row = e.target.closest(".pr[data-why]"); row ? showTip(row) : hideTip(); });
+  list_.addEventListener("mouseleave", hideTip);
   list_.addEventListener("focusin", e => { const row = e.target.closest(".pr[data-why]"); if (row) showTip(row); });
-  list_.addEventListener("focusout", () => tip.classList.remove("on"));
-  addEventListener("scroll", () => tip.classList.remove("on"), { passive: true });
+  list_.addEventListener("focusout", hideTip);
+  addEventListener("scroll", hideTip, { passive: true });
 
   /* ---------- questions: a dialog behind the ? button ---------- */
   const help = $("#help");

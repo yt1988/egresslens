@@ -29,6 +29,11 @@ asks about 60 destinations at once and groups the addresses they report into exi
   (Tokyo)", "This site (Shanghai)" on group headings, findings and the seen-by list — and never by hostname: a rule
   list that learned an anchor's address would route around it. "This site (Cloudflare)" is the page's own host (the
   Cloudflare view of this connection), not a node.
+- **The hover bubble is painted with the page, not when it is first hovered.** A bubble created by script and shown on
+  the first hover is that element's first paint, and Chromium may take it as the largest contentful paint (1ms.dog #146
+  i.5). So `.tip` sits in `src/page.html` with a sentence in it (an empty one is not painted), painted opaque at load
+  and shrunk to nothing (`scale(0)`); hover only fills and reveals it. This settles Chromium; WebKit can still record it
+  as a candidate, which the field data does not see much of.
 - **Every exit says who saw it.** Each card groups the probes that reported it by vantage — this site (Cloudflare), our
   Shanghai server, our Tokyo server, other checkpoints (named by themselves) — and the exit count sits under the
   verdict. No group is a statement about the visitor's country: the site speaks to a global audience (tool-contract §0),

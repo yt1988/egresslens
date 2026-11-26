@@ -129,7 +129,11 @@ ul { list-style: none; margin: 0; padding: 0; }
 .pr.leak { background: color-mix(in srgb, var(--bad) 10%, transparent); }
 .pr.fail + .pr, .pr.odd + .pr, .pr.leak + .pr, .pr.fail, .pr.odd, .pr.leak { border-top-color: transparent; }
 .tip { position: fixed; z-index: 50; max-width: min(340px, calc(100vw - 16px)); background: var(--fg); color: var(--bg); font: 500 12.5px/1.45 var(--f-ui); padding: 6px 10px; border-radius: 7px; pointer-events: none; opacity: 0; transition: opacity .12s; }
-.tip.on { opacity: 1; }
+/* loaded in the markup, painted opaque once and shrunk to nothing: Chromium then never takes the bubble's first
+   appearance on hover as a largest paint. (WebKit can still count it; the field data is Chromium.) */
+.tip.pre { left: 0; top: 0; opacity: 1; transform: scale(0); }
+.tip.on { opacity: 1; animation: tip-in .12s; }
+@keyframes tip-in { from { opacity: 0; } }
 
 /* questions: a dialog behind the ? button */
 .help { width: min(640px, calc(100vw - 32px)); max-height: min(80vh, 720px); border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); color: var(--fg); padding: 16px 20px 18px; box-shadow: 0 20px 60px #0004; }
