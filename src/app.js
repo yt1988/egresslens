@@ -520,7 +520,7 @@
     renderExits(); renderChips(); renderChecks(); renderGroups(); renderFocus(); renderVerdict(); for (const p of PROBES) renderRow(p);
     $("#run span").textContent = t("test_mine"); $("#run").disabled = false;
     // the shared dialog's banner above the result: when it was shared, and a button for the visitor's own test
-    import("/assets/share/share.js?v=10").then(({ received }) => {
+    import("/assets/share/share.js?v=11").then(({ received }) => {
       if (S.shared === R) S.banner = received({ lang: LANG, ts: R.ts, at: $(".hero"), test: () => $("#run").click() });
     }).catch(() => {});
   }
@@ -573,7 +573,9 @@
   }
   $("#share").onclick = async () => {
     if (!S.done || !S.exits.length) return;
-    const { share } = await import("/assets/share/share.js?v=10");
+    const mod = await import("/assets/share/share.js?v=11").catch(() => null);
+    if (!mod) { window.msShareDown && window.msShareDown(); return; }
+    const { share } = mod;
     share({
       lang: LANG, name: t("name"), file: "egresslens", show: ["city", "isp"], never: ["ip"],
       link: shareLink, home: location.origin + D.home[LANG], text: () => t("share_text", { v: t("vh_" + verdict()) }),
